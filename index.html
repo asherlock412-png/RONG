@@ -3,32 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>6.0 投資計畫控台</title>
+    <title>6.0 投資計畫控台 (極致清晰版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 新增 Chart.js 用於繪製成長曲線 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
         .tab-active { background: white; color: #0f172a !important; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input[type="range"] { accent-color: #3b82f6; }
+        .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        /* 彈窗動畫 */
-        #edit-modal { transition: opacity 0.3s ease; }
+
+        /* Tracker 質感打勾動畫特效 */
+        .task-item { transition: all 0.3s ease; }
+        .task-item.is-done { background: #f8fafc; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.03); border-color: #e2e8f0; }
+        .task-item .date-circle { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .task-item.is-done .date-circle { background: #f97316; border-color: #f97316; }
+        .task-item .date-text { transition: all 0.3s ease; }
+        .task-item.is-done .date-text { transform: translateY(-20px); opacity: 0; }
+        .task-item .check-icon { transition: all 0.3s ease; transform: translateY(20px); opacity: 0; }
+        .task-item.is-done .check-icon { transform: translateY(0); opacity: 1; }
+        .task-item .title-text { transition: color 0.3s ease; position: relative; display: inline-block; }
+        .task-item.is-done .title-text { color: #94a3b8; }
+        .task-item .strike-line { content: ''; position: absolute; left: 0; top: 50%; width: 0; height: 2px; background: #cbd5e1; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .task-item.is-done .strike-line { width: 100%; }
+        .task-item .amount-text { transition: color 0.3s ease; }
+        .task-item.is-done .amount-text { color: #cbd5e1; }
+        .task-item .code-text { transition: opacity 0.3s ease; }
+        .task-item.is-done .code-text { opacity: 0.5; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20 text-slate-900">
+<body class="bg-slate-50 min-h-screen pb-10 text-slate-900 relative">
+
+    <!-- 自訂懸浮提示框 (Toast) -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300 z-[200]">
+        通知訊息
+    </div>
 
     <div id="app" class="max-w-xl mx-auto">
-        <!-- Header -->
+        <!-- Header: 保持深色增加層次感 -->
         <div class="bg-slate-900 p-6 text-white sticky top-0 z-50 shadow-xl">
             <div class="flex justify-between items-center">
                 <h1 class="text-3xl font-black italic tracking-tighter text-blue-400">6.0 PLAN</h1>
-                <div class="text-xs bg-blue-600/30 border border-blue-500/50 px-2 py-0.5 rounded text-blue-200 font-bold uppercase tracking-widest">Live</div>
+                <div class="text-xs bg-blue-600/30 border border-blue-500/50 px-2 py-0.5 rounded text-blue-200 font-bold uppercase tracking-widest">Enhanced Clarity</div>
             </div>
-            <p id="total-value-display" class="text-slate-400 text-base mt-2 font-bold font-mono tracking-wide">載入中...</p>
             
-            <!-- 進度條 -->
-            <div class="mt-5 bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-inner">
+            <!-- 加入編輯與同步按鈕的區塊 -->
+            <div class="flex justify-between items-center mt-3">
+                <p id="total-value" class="text-slate-400 text-base font-bold font-mono tracking-wide">載入中...</p>
+                <div class="flex gap-2">
+                    <!-- 新增：同步最新報價按鈕 -->
+                    <button onclick="syncPrices()" id="sync-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
+                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        抓取報價
+                    </button>
+                    <!-- 編輯數據按鈕 -->
+                    <button onclick="openEditModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
+                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        編輯
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 千萬目標進度追蹤器 -->
+            <div class="mt-4 bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-inner">
                 <div class="flex justify-between items-end mb-2">
                     <div class="flex items-center">
                         <span class="text-lg mr-2">🎯</span>
@@ -37,183 +79,809 @@
                     <div class="text-sm font-black text-emerald-400" id="goal-percentage">--%</div>
                 </div>
                 <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden ring-1 ring-slate-700">
-                    <div id="goal-progress-bar" class="bg-gradient-to-r from-blue-500 via-teal-400 to-emerald-400 h-full rounded-full transition-all duration-1000 w-0"></div>
+                    <div id="goal-progress-bar" class="bg-gradient-to-r from-blue-500 via-teal-400 to-emerald-400 h-full rounded-full transition-all duration-1500 ease-out w-0"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-[10px] font-mono font-bold text-slate-400">
+                    <span id="current-val-display">---</span>
+                    <span id="goal-val-display">$10,000,000</span>
                 </div>
             </div>
 
-            <!-- Tabs -->
+            <!-- Navigation Tabs -->
             <div class="flex mt-6 bg-white/10 p-1 rounded-xl text-sm font-bold backdrop-blur-md overflow-x-auto no-scrollbar gap-1">
                 <button onclick="switchTab('diagnosis')" id="btn-diagnosis" class="flex-none px-4 py-2.5 rounded-lg transition-all tab-active">配置分析</button>
                 <button onclick="switchTab('plan')" id="btn-plan" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">定期計畫</button>
+                <button onclick="switchTab('tracker')" id="btn-tracker" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">扣款行程</button>
                 <button onclick="switchTab('calculator')" id="btn-calculator" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">財富願景</button>
             </div>
         </div>
 
-        <!-- Tab: Diagnosis -->
-        <div id="tab-diagnosis" class="p-4 space-y-6">
+        <!-- Tab 1: Diagnosis (配置分析) -->
+        <div id="tab-diagnosis" class="p-4 space-y-6 animate-in fade-in duration-500">
             <section class="bg-white p-6 rounded-3xl shadow-md border border-slate-100">
-                <div id="asset-bar" class="flex h-10 w-full rounded-full overflow-hidden bg-slate-100 ring-4 ring-slate-50"></div>
-                <div id="asset-legend" class="grid grid-cols-2 gap-4 mt-6 text-xs font-black text-slate-600"></div>
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 text-center">目前資產比例分佈</h3>
+                <div id="asset-bar" class="flex h-10 w-full rounded-full overflow-hidden shadow-inner bg-slate-100 ring-4 ring-slate-50"></div>
+                <div id="asset-legend" class="grid grid-cols-2 gap-y-4 gap-x-4 mt-6 text-xs font-black text-slate-600"></div>
             </section>
-            <div id="holdings-list" class="space-y-4 px-2"></div>
-        </div>
 
-        <!-- Tab: Plan -->
-        <div id="tab-plan" class="hidden p-4 space-y-4">
-            <div id="plan-list" class="space-y-3"></div>
-        </div>
-
-        <!-- Tab: Calculator -->
-        <div id="tab-calculator" class="hidden p-4 space-y-6">
-            <div class="bg-white p-6 rounded-3xl shadow-md space-y-6">
-                <div>
-                    <div class="flex justify-between mb-2 text-xs font-black text-slate-400 uppercase">預期年化報酬 <span id="val-rate" class="text-blue-600 text-lg">8%</span></div>
-                    <input type="range" id="input-rate" min="1" max="15" value="8" oninput="calculate()" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+            <section class="bg-white p-6 rounded-[2.5rem] shadow-md border border-slate-100 overflow-hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-base font-black text-slate-800 flex items-center">
+                        <span class="w-1.5 h-6 bg-blue-600 rounded-full mr-3 shadow-lg shadow-blue-200"></span>
+                        持有資產細節
+                    </h3>
+                    <span id="holdings-summary" class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Assets</span>
                 </div>
+                <div id="holdings-list" class="space-y-4 max-h-[450px] overflow-y-auto pr-1 custom-scroll"></div>
+            </section>
+        </div>
+
+        <!-- Tab 2: Plan (定期計畫) -->
+        <div id="tab-plan" class="hidden p-4 space-y-4 animate-in fade-in duration-500">
+            <div class="flex justify-between items-end px-1 mb-2">
                 <div>
-                    <div class="flex justify-between mb-2 text-xs font-black text-slate-400 uppercase">投資年限 <span id="val-years" class="text-blue-600 text-lg">10年</span></div>
-                    <input type="range" id="input-years" min="1" max="35" value="10" oninput="calculate()" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">6.0 核心戰略</h2>
+                    <p class="text-xs text-slate-400 uppercase font-black tracking-widest mt-1">Monthly Investment Plan</p>
+                </div>
+                <div class="text-right">
+                    <div id="plan-monthly-total" class="text-2xl font-mono font-black text-blue-600">$60,000</div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">/ Month</div>
                 </div>
             </div>
 
-            <!-- 預估總額卡片 (字體大小優化) -->
-            <div class="bg-white rounded-[2.5rem] p-8 text-center shadow-xl border-2 border-blue-50">
-                <div class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">預估資產總額展望</div>
-                <div id="res-total" class="text-4xl sm:text-5xl font-black mb-8 text-slate-900 tracking-tighter break-words">$---</div>
-                <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-8 text-left text-xs">
+            <!-- 計畫比例條 -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-black text-slate-500">單月配置比例</span>
+                </div>
+                <div id="plan-bar" class="flex h-4 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
+            </div>
+
+            <!-- 計畫列表 -->
+            <div id="plan-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Tab 3: Tracker (扣款行程) -->
+        <div id="tab-tracker" class="hidden p-4 space-y-4 animate-in fade-in duration-500">
+            <div class="flex justify-between items-end px-1 mb-2">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">本月執行進度</h2>
+                    <p class="text-xs text-slate-400 uppercase font-black tracking-widest">Automatic Investment List</p>
+                </div>
+                <div id="progress-percent" class="text-4xl font-black text-blue-600">0%</div>
+            </div>
+            <div id="tracker-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Tab 4: Calculator (財富願景) -->
+        <div id="tab-calculator" class="hidden p-4 space-y-6 animate-in fade-in duration-500">
+            <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-md space-y-8">
+                <div>
+                    <div class="flex justify-between mb-3 text-base font-black">
+                        <span class="text-slate-500 tracking-wider text-sm">預期年化報酬率</span>
+                        <span id="val-rate" class="text-blue-600 text-xl">8%</span>
+                    </div>
+                    <input type="range" id="input-rate" min="1" max="15" value="8" oninput="calculate()" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer shadow-inner">
+                </div>
+                <div>
+                    <div class="flex justify-between mb-3 text-base font-black">
+                        <span class="text-slate-500 tracking-wider text-sm">投資年期</span>
+                        <span id="val-years" class="text-blue-600 text-xl">10年</span>
+                    </div>
+                    <input type="range" id="input-years" min="1" max="35" value="10" oninput="calculate()" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer shadow-inner">
+                </div>
+            </div>
+
+            <!-- 預估圖卡 -->
+            <div class="bg-white rounded-[3rem] p-10 pb-12 text-center shadow-xl relative overflow-hidden border-2 border-blue-50">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
+                <div class="relative z-10">
+                    <div class="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-4">預估資產總額展望</div>
+                    <div id="res-total" class="text-4xl sm:text-5xl font-black mb-2 text-slate-900 tracking-tighter break-words">---</div>
+                    
+                    <!-- 達陣千萬目標動態徽章 -->
+                    <div id="goal-milestone-msg" class="mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest transition-all duration-500 shadow-sm border">
+                        計算中...
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 sm:gap-8 border-t border-slate-100 pt-8 text-left">
+                        <div>
+                            <div class="text-[10px] sm:text-xs text-slate-400 font-black uppercase mb-1 tracking-widest">現有本金增值</div>
+                            <div id="res-initial" class="text-sm sm:text-base font-bold text-slate-700">---</div>
+                        </div>
+                        <div class="border-l border-slate-100 pl-4 sm:pl-8">
+                            <div class="text-[10px] sm:text-xs text-slate-400 font-black uppercase mb-1 tracking-widest">每月投入累積</div>
+                            <div id="res-monthly" class="text-sm sm:text-base font-bold text-slate-700">---</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 全球版圖動態推演區塊 -->
+            <div class="bg-white p-6 sm:p-8 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-sm font-black text-slate-500 flex items-center">
+                        <span class="w-1.5 h-4 bg-orange-500 rounded-full mr-2 shadow-lg shadow-orange-200"></span>
+                        🌍 投資版圖演化推演
+                    </h3>
+                    <span id="region-year-label" class="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
+                        第 10 年後
+                    </span>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- 現有版圖 -->
                     <div>
-                        <div class="text-slate-400 mb-1">本金增值</div>
-                        <div id="res-initial" class="font-bold text-slate-700">---</div>
+                        <div class="flex justify-between text-[11px] font-black text-slate-400 mb-2 uppercase tracking-widest">
+                            <span>現有庫存真實比重</span>
+                        </div>
+                        <div id="current-region-bar" class="flex h-2.5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                     </div>
-                    <div class="border-l border-slate-100 pl-4">
-                        <div class="text-slate-400 mb-1">投入累積</div>
-                        <div id="res-monthly" class="font-bold text-slate-700">---</div>
+                    
+                    <!-- 預估版圖 -->
+                    <div>
+                        <div class="flex justify-between text-[11px] font-black text-blue-500 mb-2 uppercase tracking-widest">
+                            <span>計畫執行後修正比重</span>
+                        </div>
+                        <div id="future-region-bar" class="flex h-5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100 ring-2 ring-blue-50"></div>
                     </div>
+                </div>
+
+                <!-- 圖例與數據 -->
+                <div id="region-legend" class="grid grid-cols-3 gap-x-2 gap-y-4 mt-8 pt-6 border-t border-slate-50"></div>
+            </div>
+            
+            <!-- 動態資產成長曲線圖 -->
+            <div class="bg-white p-6 sm:p-8 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
+                <h3 class="text-sm font-black text-slate-500 mb-5 flex items-center">
+                    <span class="w-1.5 h-4 bg-blue-600 rounded-full mr-2 shadow-lg shadow-blue-200"></span>
+                    時間複利成長軌跡
+                </h3>
+                
+                <!-- 複利名言 -->
+                <div class="mb-6 pl-3.5 border-l-[3px] border-blue-400/60 bg-blue-50/30 py-1.5 rounded-r-lg">
+                    <p class="text-xs font-bold text-slate-600 italic tracking-wide leading-relaxed">
+                        「複利是世界第八大奇蹟。」
+                    </p>
+                    <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5">
+                        — Albert Einstein
+                    </p>
+                </div>
+
+                <div class="relative h-[250px] w-full">
+                    <canvas id="growthChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 浮動編輯按鈕 -->
-    <button onclick="toggleModal(true)" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-[60] active:scale-90 transition-transform">
-        ⚙️
-    </button>
-
-    <!-- 編輯彈窗 -->
-    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl">
-            <h3 class="text-xl font-black mb-6 flex items-center"><span class="mr-2">📝</span> 修改核心數據</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase mb-2">目前資產總額 (本金)</label>
-                    <input type="number" id="edit-principal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold">
-                </div>
-                <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase mb-2">每月投入金額</label>
-                    <input type="number" id="edit-monthly" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold">
-                </div>
+    <!-- 編輯數據 Modal (預設隱藏) -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center transition-opacity duration-300">
+        <div class="bg-white w-full sm:w-[500px] max-h-[90vh] rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+                <h2 class="text-lg font-black text-slate-800 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    設定數據
+                </h2>
+                <button onclick="closeEditModal()" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold transition-colors">✕</button>
             </div>
-            <div class="flex gap-3 mt-8">
-                <button onclick="toggleModal(false)" class="flex-1 py-3 font-bold text-slate-400">取消</button>
-                <button onclick="saveData()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200">儲存更新</button>
+            <div class="p-5 overflow-y-auto flex-1 custom-scroll space-y-5" id="edit-form-container">
+                <!-- Inputs injected by JS -->
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white sm:rounded-b-3xl">
+                <button onclick="saveData()" class="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all text-base tracking-widest">儲存並更新儀表板</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 初始數據
-        let CONFIG = {
-            principal: 4657715,
+        // --- 資料狀態管理 (支援 LocalStorage) ---
+        const defaultData = {
+            principal: 4642206, // 已扣除賣掉的標的總和
             monthly: 60000,
-            goal: 10000000
+            goal: 10000000,
+            sheetUrl: '', // 新增：試算表 CSV 的網址
+            holdings: [
+                { id: '2330', name: '台積電', shares: 1000, value: 1940000, color: '#ef4444' }, 
+                { id: '0050', name: '元大台灣50', shares: 14000, value: 1105300, color: '#f87171' },
+                { id: '0052', name: '富邦科技', shares: 16000, value: 748640, color: '#dc2626' },
+                { id: '00631L', name: '台灣50正2', shares: 6000, value: 136560, color: '#b91c1c' },
+                { id: '00757', name: '統一FANG+', shares: 3000, value: 330150, color: '#3b82f6' }, 
+                { id: '00646', name: '元大S&P500', shares: 803, value: 54323, color: '#2563eb' },
+                { id: '00662', name: '富邦NASDAQ', shares: 425, value: 43159, color: '#8b5cf6' }, 
+                { id: '00955', name: '中信日本商社', shares: 12314, value: 199487, color: '#f97316' }, 
+                { id: '009805', name: '新光美國電力', shares: 3499, value: 54095, color: '#eab308' }, 
+                { id: '00981A', name: '統一台股增長', shares: 1348, value: 30492, color: '#10b981' }
+            ]
         };
 
-        const detailedHoldings = [
-            { id: '2330', name: '台積電', value: 1950000, color: '#ef4444' }, 
-            { id: '0050', name: '元大台灣50', value: 1108800, color: '#f87171' },
-            { id: '00757', name: '統一FANG+', value: 333750, color: '#3b82f6' },
-            { id: '00955', name: '中信日本商社', value: 167602, color: '#f97316' },
-            { id: '00646', name: '元大S&P500', value: 54483, color: '#2563eb' }
+        // 從 localStorage 讀取或使用預設資料 (更新 key)
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v6')) || JSON.parse(JSON.stringify(defaultData));
+
+        // 圖表全域變數
+        let growthChartInstance = null;
+
+        // 6.0 每月定額戰略計畫
+        const sipPlan = [
+            { id: '00646', name: '元大 S&P 500', type: '美股大盤', amount: 20000, dates: '8, 18 號', color: '#2563eb' },
+            { id: '00662', name: '富邦 NASDAQ', type: '美股科技', amount: 12000, dates: '8, 28 號', color: '#8b5cf6' },
+            { id: '009805', name: '新光美國電力', type: '美國基建', amount: 12000, dates: '6, 26 號', color: '#eab308' },
+            { id: '00955', name: '中信日本商社', type: '日股商社', amount: 12000, dates: '6, 16, 26 號', color: '#f97316' },
+            { id: '00981A', name: '統一台股增長', type: '台股動能', amount: 4000, dates: '10, 20 號', color: '#10b981' }
         ];
 
-        const sipPlan = [
-            { name: '元大 S&P 500', amount: 20000, color: '#2563eb' },
-            { name: '富邦 NASDAQ', amount: 12000, color: '#1d4ed8' },
-            { name: '新光美國電力', amount: 12000, color: '#eab308' },
-            { name: '中信日本商社', amount: 12000, color: '#f97316' },
-            { name: '統一台股增長', amount: 4000, color: '#10b981' }
+        // 定義區域映射規則
+        const regionMapping = [
+            { key: 'TW', name: '台股版圖', color: '#ef4444', ids: ['2330', '0050', '0052', '00631L', '00981A'] },
+            { key: 'US', name: '美股版圖', color: '#3b82f6', ids: ['00757', '00646', '00662', '009805'] },
+            { key: 'JP', name: '日股版圖', color: '#f97316', ids: ['00955', '00645'] }
         ];
+
+        // 扣款行程
+        const schedule = [
+            { date: '06', label: '新光美國電力 + 中信日本商社', code: '009805 + 00955', amount: 10000 },
+            { date: '08', label: '元大 S&P 500 + 富邦 NASDAQ', code: '00646 + 00662', amount: 16000 },
+            { date: '10', label: '統一台股增長', code: '00981A', amount: 2000 },
+            { date: '16', label: '中信日本商社', code: '00955', amount: 4000 },
+            { date: '18', label: '元大 S&P 500', code: '00646', amount: 10000 },
+            { date: '20', label: '統一台股增長', code: '00981A', amount: 2000 },
+            { date: '26', label: '新光美國電力 + 中信日本商社', code: '009805 + 00955', amount: 10000 },
+            { date: '28', label: '富邦 NASDAQ', code: '00662', amount: 6000 }
+        ];
+
+        let checkedCount = 0;
 
         const formatCurrency = (num) => '$' + Math.round(num).toLocaleString();
 
+        // 顯示通知訊息 (Toast)
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // --- 同步 Google 試算表最新報價邏輯 ---
+        async function syncPrices() {
+            if (!appData.sheetUrl) {
+                showToast('請先在「編輯數據」中貼上 Google 試算表 CSV 網址！');
+                openEditModal();
+                return;
+            }
+
+            const btn = document.getElementById('sync-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `<span class="loading-dots text-white">更新中</span>`;
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(appData.sheetUrl);
+                if (!response.ok) throw new Error('無法讀取試算表，請檢查網址或發佈狀態。');
+                
+                const csvText = await response.text();
+                const rows = csvText.split('\n').map(row => row.split(','));
+                
+                const priceMap = {};
+                // 解析 CSV，預設格式為 A欄: 股號 (如 2330), B欄: 價格
+                rows.forEach(row => {
+                    if (row.length >= 2) {
+                        const id = row[0].replace(/['"\r]/g, '').trim();
+                        const price = parseFloat(row[1].replace(/['"\r]/g, '').trim());
+                        if (id && !isNaN(price)) {
+                            priceMap[id] = price;
+                        }
+                    }
+                });
+
+                let updatedCount = 0;
+                let newPrincipal = 0;
+
+                appData.holdings.forEach(h => {
+                    if (priceMap[h.id] !== undefined) {
+                        // 依照新的市價與現有股數重新計算該檔標的總現值
+                        h.value = Math.round(h.shares * priceMap[h.id]);
+                        updatedCount++;
+                    }
+                    newPrincipal += h.value;
+                });
+
+                if (updatedCount > 0) {
+                    appData.principal = newPrincipal;
+                    localStorage.setItem('investment_60_data_v6', JSON.stringify(appData));
+                    refreshDashboard();
+                    showToast(`✅ 成功同步 ${updatedCount} 檔標的最新報價！`);
+                } else {
+                    showToast(`⚠️ 找不到符合的股號，請檢查試算表的 A 欄格式。`);
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('❌ 同步失敗，請確認網址是否為發佈到網路的 CSV 格式。');
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
         function switchTab(tab) {
-            ['diagnosis', 'plan', 'calculator'].forEach(t => {
+            ['diagnosis', 'plan', 'tracker', 'calculator'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
-                document.getElementById(`btn-${t}`).classList.remove('tab-active', 'text-slate-400');
+                document.getElementById(`btn-${t}`).classList.remove('tab-active');
                 document.getElementById(`btn-${t}`).classList.add('text-slate-400');
             });
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
             document.getElementById(`btn-${tab}`).classList.add('tab-active');
+            document.getElementById(`btn-${tab}`).classList.remove('text-slate-400');
         }
 
-        function toggleModal(show) {
-            const modal = document.getElementById('edit-modal');
-            if(show) {
-                document.getElementById('edit-principal').value = CONFIG.principal;
-                document.getElementById('edit-monthly').value = CONFIG.monthly;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+        // --- UI 渲染函數 ---
+        
+        function initPlan() {
+            const list = document.getElementById('plan-list');
+            const bar = document.getElementById('plan-bar');
+            document.getElementById('plan-monthly-total').innerText = formatCurrency(appData.monthly);
+            
+            sipPlan.sort((a, b) => b.amount - a.amount).forEach(item => {
+                const percentage = (item.amount / appData.monthly) * 100;
+                
+                const slice = document.createElement('div');
+                slice.style.width = percentage + '%';
+                slice.style.backgroundColor = item.color;
+                slice.className = "h-full transition-all duration-1000";
+                bar.appendChild(slice);
+
+                const div = document.createElement('div');
+                div.className = "flex items-center p-5 bg-white rounded-3xl border border-slate-100 shadow-sm mb-3";
+                div.innerHTML = `
+                    <div class="w-1.5 h-12 rounded-full mr-4 shadow-sm" style="background:${item.color}"></div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-1">
+                            <div class="font-black text-slate-800 text-base">${item.name}</div>
+                            <div class="font-mono font-black text-slate-700 text-lg">${formatCurrency(item.amount)}</div>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <div class="text-[13px] text-slate-500 font-bold tracking-wider flex items-center">
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px] mr-2">${item.type}</span>
+                                每月 ${item.dates}
+                            </div>
+                            <div class="text-xs font-black" style="color:${item.color}">${percentage.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function initTracker() {
+            const list = document.getElementById('tracker-list');
+            schedule.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "task-item flex items-center p-5 bg-white rounded-3xl border border-slate-100 shadow-sm active:scale-95 cursor-pointer";
+                div.onclick = function() {
+                    const isChecked = this.classList.contains('is-done');
+                    if (!isChecked) {
+                        this.classList.add('is-done');
+                        checkedCount++;
+                    } else {
+                        this.classList.remove('is-done');
+                        checkedCount--;
+                    }
+                    document.getElementById('progress-percent').innerText = Math.round((checkedCount / schedule.length) * 100) + '%';
+                };
+                div.innerHTML = `
+                    <div class="date-circle w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mr-4 border border-slate-200 relative overflow-hidden">
+                        <span class="date-text text-xs font-black text-slate-400 absolute">${item.date}</span>
+                        <svg class="check-icon w-6 h-6 text-white absolute" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="title-text font-black text-slate-800 text-base tracking-tight">
+                            ${item.label}
+                            <div class="strike-line"></div>
+                        </div>
+                        <div class="code-text text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">${item.code}</div>
+                    </div>
+                    <div class="amount-text font-mono font-black text-slate-600 text-base">${formatCurrency(item.amount)}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function initDiagnosis() {
+            const bar = document.getElementById('asset-bar');
+            const legend = document.getElementById('asset-legend');
+            const holdings = document.getElementById('holdings-list');
+            
+            const getCatSum = (ids) => appData.holdings.filter(h => ids.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
+
+            const categories = [
+                { name: '台股核心', val: getCatSum(['2330', '0050', '0052', '00631L', '00981A']), col: '#ef4444' },
+                { name: '美股成長', val: getCatSum(['00757', '00646', '00662']), col: '#3b82f6' },
+                { name: '日股商社', val: getCatSum(['00955', '00645']), col: '#f97316' },
+                { name: 'AI電力', val: getCatSum(['009805', '00965']), col: '#eab308' }
+            ];
+
+            categories.forEach(c => {
+                const slice = document.createElement('div');
+                slice.style.width = (c.val / appData.principal * 100) + '%';
+                slice.style.backgroundColor = c.col;
+                slice.className = "h-full transition-all duration-1000";
+                bar.appendChild(slice);
+
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between border-b border-slate-50 pb-2";
+                item.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full mr-2" style="background:${c.col}"></div>
+                        <span class="font-black text-slate-500 uppercase tracking-tighter text-xs">${c.name}</span>
+                    </div>
+                    <span class="font-black text-slate-800 text-sm">${(c.val/appData.principal*100).toFixed(1)}%</span>
+                `;
+                legend.appendChild(item);
+            });
+
+            appData.holdings.sort((a,b) => b.value - a.value).forEach(h => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center border-b border-slate-50 py-4 last:border-0";
+                div.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-2 h-10 rounded-full mr-4 shadow-sm" style="background:${h.color}"></div>
+                        <div>
+                            <div class="text-base font-black text-slate-800">${h.name}</div>
+                            <div class="text-xs text-slate-500 font-black uppercase tracking-tight flex items-center gap-2 mt-1">
+                                <span class="font-mono text-slate-400">${h.id}</span>
+                                <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                                <span>${(h.shares || 0).toLocaleString()} 股</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-mono font-black text-slate-700">${formatCurrency(h.value)}</div>
+                        <div class="text-sm text-blue-600 font-black tracking-widest">${(h.value/appData.principal*100).toFixed(1)}%</div>
+                    </div>
+                `;
+                holdings.appendChild(div);
+            });
+            
+            document.getElementById('holdings-summary').innerText = (appData.principal / 1000000).toFixed(2) + 'M Assets';
+        }
+
+        // --- 動態區域推演更新函數 ---
+        function updateRegionProjection(years, rate) {
+            document.getElementById('region-year-label').innerText = `第 ${years} 年後`;
+
+            const currentBar = document.getElementById('current-region-bar');
+            const futureBar = document.getElementById('future-region-bar');
+            const legendContainer = document.getElementById('region-legend');
+            
+            currentBar.innerHTML = '';
+            futureBar.innerHTML = '';
+            legendContainer.innerHTML = '';
+
+            const sipTotalBase = sipPlan.reduce((sum, item) => sum + item.amount, 0);
+            let futureTotalAssets = 0;
+            let regionData = [];
+
+            // 1. 計算各區域的現值與未來推演值
+            regionMapping.forEach(rc => {
+                let currentVal = appData.holdings.filter(h => rc.ids.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
+                
+                let sipValBase = sipPlan.filter(p => rc.ids.includes(p.id)).reduce((sum, p) => sum + p.amount, 0);
+                let monthlyVal = (sipValBase / sipTotalBase) * appData.monthly;
+                
+                let n = years * 12;
+                let r = rate / 100 / 12;
+                let futureVal = currentVal * Math.pow(1 + r, n) + (monthlyVal > 0 ? monthlyVal * ((Math.pow(1 + r, n) - 1) / r) : 0);
+
+                futureTotalAssets += futureVal;
+                regionData.push({
+                    name: rc.name,
+                    color: rc.color,
+                    currentVal: currentVal,
+                    futureVal: futureVal
+                });
+            });
+
+            // 2. 渲染對比進度條與圖例
+            regionData.forEach(data => {
+                let currentPct = (data.currentVal / appData.principal) * 100;
+                let futurePct = (data.futureVal / futureTotalAssets) * 100;
+
+                const cSlice = document.createElement('div');
+                cSlice.style.width = currentPct + '%';
+                cSlice.style.backgroundColor = data.color;
+                cSlice.className = "h-full opacity-60 transition-all duration-700 ease-out";
+                currentBar.appendChild(cSlice);
+
+                const fSlice = document.createElement('div');
+                fSlice.style.width = futurePct + '%';
+                fSlice.style.backgroundColor = data.color;
+                fSlice.className = "h-full transition-all duration-700 ease-out";
+                futureBar.appendChild(fSlice);
+
+                const isGrowing = futurePct > currentPct;
+                const trendIcon = isGrowing 
+                    ? `<svg class="w-3 h-3 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>` 
+                    : `<svg class="w-3 h-3 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>`;
+
+                const legDiv = document.createElement('div');
+                legDiv.innerHTML = `
+                    <div class="flex items-center mb-1.5">
+                        <div class="w-2 h-2 rounded-full mr-1.5" style="background:${data.color}"></div>
+                        <span class="text-[11px] font-black text-slate-600">${data.name}</span>
+                    </div>
+                    <div class="pl-3.5 space-y-0.5">
+                        <div class="text-[10px] text-slate-400 font-mono font-bold">現: ${currentPct.toFixed(1)}%</div>
+                        <div class="text-xs font-black font-mono flex items-center gap-1" style="color:${data.color}">
+                            預: ${futurePct.toFixed(1)}% ${Math.abs(futurePct - currentPct) > 0.5 ? trendIcon : ''}
+                        </div>
+                    </div>
+                `;
+                legendContainer.appendChild(legDiv);
+            });
+        }
+
+        // --- 繪製與更新圖表 ---
+        function updateGrowthChart(years, annualRate, principal, monthly) {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            const labels = [];
+            const dataPoints = [];
+            const goalDataPoints = []; 
+            const r = annualRate / 100 / 12;
+
+            for (let i = 0; i <= years; i++) {
+                labels.push(`第 ${i} 年`);
+                goalDataPoints.push(appData.goal); 
+                
+                if (i === 0) {
+                    dataPoints.push(principal);
+                } else {
+                    const n = i * 12; 
+                    const val = principal * Math.pow(1 + r, n) + monthly * ((Math.pow(1 + r, n) - 1) / r);
+                    dataPoints.push(Math.round(val));
+                }
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); 
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+            if (growthChartInstance) {
+                growthChartInstance.data.labels = labels;
+                growthChartInstance.data.datasets[0].data = dataPoints;
+                growthChartInstance.data.datasets[1].data = goalDataPoints;
+                growthChartInstance.update();
             } else {
-                modal.classList.add('hidden');
+                growthChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '預估總資產',
+                                data: dataPoints,
+                                borderColor: '#3b82f6', 
+                                backgroundColor: gradient,
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4, 
+                                pointRadius: 0, 
+                                pointHoverRadius: 6, 
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#3b82f6',
+                                pointBorderWidth: 2,
+                                order: 2
+                            },
+                            {
+                                label: '千萬目標線',
+                                data: goalDataPoints,
+                                borderColor: 'rgba(16, 185, 129, 0.6)', 
+                                borderWidth: 2,
+                                borderDash: [6, 4], 
+                                fill: false,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleFont: { family: 'Noto Sans TC', size: 13 },
+                                bodyFont: { family: 'Noto Sans TC', size: 14, weight: 'bold' },
+                                padding: 12,
+                                displayColors: true,
+                                filter: function(tooltipItem) { return tooltipItem.datasetIndex === 0; },
+                                callbacks: { label: function(context) { return '$' + context.parsed.y.toLocaleString(); } }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { family: 'Noto Sans TC', size: 10 }, color: '#94a3b8', maxTicksLimit: 6 } },
+                            y: { border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Noto Sans TC', size: 10 }, color: '#94a3b8', callback: function(value) { return (value / 10000) + ' 萬'; } } }
+                        }
+                    }
+                });
             }
         }
 
-        function saveData() {
-            CONFIG.principal = Number(document.getElementById('edit-principal').value);
-            CONFIG.monthly = Number(document.getElementById('edit-monthly').value);
-            updateUI();
-            toggleModal(false);
-        }
-
-        function updateUI() {
-            document.getElementById('total-value-display').innerText = 'PORTFOLIO: ' + formatCurrency(CONFIG.principal);
-            const progress = (CONFIG.principal / CONFIG.goal) * 100;
-            document.getElementById('goal-percentage').innerText = progress.toFixed(1) + '%';
-            document.getElementById('goal-progress-bar').style.width = progress + '%';
-            calculate();
-        }
-
         function calculate() {
-            const r = document.getElementById('input-rate').value / 100 / 12;
+            const rawRate = document.getElementById('input-rate').value;
             const y = document.getElementById('input-years').value;
+            const r = rawRate / 100 / 12;
             const n = y * 12;
-            document.getElementById('val-rate').innerText = document.getElementById('input-rate').value + '%';
+            
+            document.getElementById('val-rate').innerText = rawRate + '%';
             document.getElementById('val-years').innerText = y + '年';
             
-            const initialGrowth = CONFIG.principal * Math.pow(1 + r, n);
-            const monthlyGrowth = CONFIG.monthly * ((Math.pow(1 + r, n) - 1) / r);
+            const initialGrowth = appData.principal * Math.pow(1 + r, n);
+            const monthlyGrowth = appData.monthly * ((Math.pow(1 + r, n) - 1) / r);
             const total = initialGrowth + monthlyGrowth;
             
             document.getElementById('res-total').innerText = formatCurrency(total);
             document.getElementById('res-initial').innerText = formatCurrency(initialGrowth);
             document.getElementById('res-monthly').innerText = formatCurrency(monthlyGrowth);
+
+            const msgEl = document.getElementById('goal-milestone-msg');
+            let hitYear = -1;
+            
+            for (let i = 1; i <= y; i++) {
+                let check_months = i * 12;
+                let check_val = appData.principal * Math.pow(1 + r, check_months) + appData.monthly * ((Math.pow(1 + r, check_months) - 1) / r);
+                if (check_val >= appData.goal) {
+                    hitYear = i;
+                    break;
+                }
+            }
+
+            if (hitYear !== -1) {
+                msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-orange-50 text-orange-600 border border-orange-200 shadow-sm transition-all duration-500";
+                msgEl.innerHTML = `✨ 預計於第 ${hitYear} 年達陣千萬目標 ✨`;
+            } else {
+                let diff = appData.goal - total;
+                msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-slate-50 text-slate-500 border border-slate-200 transition-all duration-500";
+                msgEl.innerHTML = `距離千萬目標仍需 $${formatCurrency(diff).replace('$', '')}`;
+            }
+
+            updateRegionProjection(parseInt(y), parseFloat(rawRate));
+            updateGrowthChart(parseInt(y), parseFloat(rawRate), appData.principal, appData.monthly);
         }
 
-        function init() {
-            // 初始化清單
-            const planList = document.getElementById('plan-list');
-            sipPlan.forEach(item => {
-                const div = document.createElement('div');
-                div.className = "flex items-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm";
-                div.innerHTML = `<div class="w-1 h-8 rounded-full mr-4" style="background:${item.color}"></div>
-                                 <div class="flex-1 font-bold text-slate-700">${item.name}</div>
-                                 <div class="font-mono font-black">${formatCurrency(item.amount)}</div>`;
-                planList.appendChild(div);
+        function initGoalTracker() {
+            const percentage = Math.min((appData.principal / appData.goal) * 100, 100);
+            document.getElementById('goal-percentage').innerText = percentage.toFixed(2) + '%';
+            document.getElementById('current-val-display').innerText = formatCurrency(appData.principal);
+            document.getElementById('goal-val-display').innerText = formatCurrency(appData.goal);
+            
+            setTimeout(() => {
+                document.getElementById('goal-progress-bar').style.width = percentage + '%';
+            }, 100);
+        }
+
+        // --- 編輯數據 Modal 相關邏輯 ---
+
+        function openEditModal() {
+            const container = document.getElementById('edit-form-container');
+            container.innerHTML = `
+                <div class="bg-blue-50/50 p-4 rounded-2xl space-y-4 border border-blue-100/50">
+                    <div>
+                        <label class="block text-xs font-black text-slate-500 mb-1">Google 試算表 CSV 網址 (自動更新報價用)</label>
+                        <input type="text" id="edit-sheetUrl" value="${appData.sheetUrl || ''}" placeholder="請貼上發佈到網路的 CSV 連結..." class="w-full bg-white border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-slate-500 mb-1">目前總資產</label>
+                        <input type="number" id="edit-principal" value="${appData.principal}" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-sm font-mono font-bold text-slate-500 focus:outline-none" readonly>
+                        <p class="text-[10px] text-slate-400 mt-1">※ 自動計算所有持股市值總和</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 mb-1">每月投入</label>
+                            <input type="number" id="edit-monthly" value="${appData.monthly}" class="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 mb-1">最終目標</label>
+                            <input type="number" id="edit-goal" value="${appData.goal}" class="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <h3 class="text-sm font-black text-slate-800 mb-3 flex items-center">
+                        <span class="w-1 h-4 bg-slate-800 rounded-full mr-2"></span>
+                        持股明細調整 (股數 / 總額)
+                    </h3>
+                    <div class="space-y-3" id="edit-holdings-list">
+                        ${appData.holdings.map((h, i) => `
+                            <div class="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex-wrap gap-2">
+                                <div class="flex items-center w-full sm:w-[40%]">
+                                    <div class="w-2 h-2 rounded-full mr-2" style="background:${h.color}"></div>
+                                    <div class="text-xs font-bold text-slate-700 truncate">${h.name}</div>
+                                </div>
+                                <div class="flex w-full sm:w-[55%] gap-2">
+                                    <div class="w-1/3 relative">
+                                        <span class="absolute left-2 top-2.5 text-[10px] text-slate-400 font-mono">股</span>
+                                        <input type="number" id="edit-holding-shares-${i}" value="${h.shares || 0}" class="w-full pl-6 pr-1 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500">
+                                    </div>
+                                    <div class="w-2/3 relative">
+                                        <span class="absolute left-2 top-2.5 text-[10px] text-slate-400 font-mono">$</span>
+                                        <input type="number" id="edit-holding-value-${i}" value="${h.value}" class="w-full pl-6 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveData() {
+            // 抓取並更新資料
+            appData.sheetUrl = document.getElementById('edit-sheetUrl').value.trim();
+            appData.monthly = Number(document.getElementById('edit-monthly').value);
+            appData.goal = Number(document.getElementById('edit-goal').value);
+
+            let newPrincipal = 0;
+            appData.holdings.forEach((h, i) => {
+                h.shares = Number(document.getElementById(`edit-holding-shares-${i}`).value);
+                h.value = Number(document.getElementById(`edit-holding-value-${i}`).value);
+                newPrincipal += h.value;
             });
-            updateUI();
+            
+            // 儲存時自動以各持股總和更新總資產
+            appData.principal = newPrincipal;
+
+            // 存入 LocalStorage
+            localStorage.setItem('investment_60_data_v6', JSON.stringify(appData));
+
+            // 更新畫面
+            closeEditModal();
+            refreshDashboard();
+            showToast('✅ 數據已儲存！');
         }
 
-        window.onload = init;
+        function refreshDashboard() {
+            // 清空舊 DOM 節點
+            document.getElementById('plan-list').innerHTML = '';
+            document.getElementById('plan-bar').innerHTML = '';
+            document.getElementById('tracker-list').innerHTML = '';
+            document.getElementById('asset-bar').innerHTML = '';
+            document.getElementById('asset-legend').innerHTML = '';
+            document.getElementById('holdings-list').innerHTML = '';
+            
+            // 重置狀態
+            checkedCount = 0;
+            document.getElementById('progress-percent').innerText = '0%';
+            document.getElementById('goal-progress-bar').style.width = '0%';
+            
+            // 重新初始化
+            document.getElementById('total-value').innerText = 'PORTFOLIO VALUE: ' + formatCurrency(appData.principal);
+            initGoalTracker();
+            initPlan();     
+            initTracker();
+            initDiagnosis();
+            calculate();
+        }
+
+        window.onload = () => {
+            // 初始載入渲染
+            document.getElementById('total-value').innerText = 'PORTFOLIO VALUE: ' + formatCurrency(appData.principal);
+            initGoalTracker();
+            initPlan();     
+            initTracker();
+            initDiagnosis();
+            calculate();
+            switchTab('diagnosis'); 
+        };
     </script>
 </body>
 </html>
