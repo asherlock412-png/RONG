@@ -56,7 +56,7 @@
             <div class="flex justify-between items-center mt-3">
                 <p id="total-value" class="text-slate-400 text-base font-bold font-mono tracking-wide">載入中...</p>
                 <div class="flex gap-2">
-                    <!-- 新增：同步最新報價按鈕 -->
+                    <!-- 同步最新報價按鈕 -->
                     <button onclick="syncPrices()" id="sync-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         抓取報價
@@ -280,7 +280,7 @@
             principal: 4642206, // 已扣除賣掉的標的總和
             monthly: 60000,
             goal: 10000000,
-            sheetUrl: '', // 新增：試算表 CSV 的網址
+            sheetUrl: '', // 試算表 CSV 的網址
             holdings: [
                 { id: '2330', name: '台積電', shares: 1000, value: 1940000, color: '#ef4444' }, 
                 { id: '0050', name: '元大台灣50', shares: 14000, value: 1105300, color: '#f87171' },
@@ -295,7 +295,7 @@
             ]
         };
 
-        // 從 localStorage 讀取或使用預設資料 (更新 key)
+        // 從 localStorage 讀取或使用預設資料
         let appData = JSON.parse(localStorage.getItem('investment_60_data_v6')) || JSON.parse(JSON.stringify(defaultData));
 
         // 圖表全域變數
@@ -520,7 +520,25 @@
                 legend.appendChild(item);
             });
 
-            appData.holdings.sort((a,b) => b.value - a.value).forEach(h => {
+            // 定義排序權重：台股(1) -> 美股(2) -> 日股(3)
+            const getRegionWeight = (id) => {
+                if (['2330', '0050', '0052', '00631L', '00981A'].includes(id)) return 1;
+                if (['00757', '00646', '00662', '009805'].includes(id)) return 2;
+                if (['00955', '00645'].includes(id)) return 3;
+                return 4;
+            };
+
+            appData.holdings.sort((a,b) => {
+                const weightA = getRegionWeight(a.id);
+                const weightB = getRegionWeight(b.id);
+                if (weightA !== weightB) {
+                    return weightA - weightB; // 跨區域排序：台 -> 美 -> 日
+                }
+                return b.value - a.value; // 同區域內排序：依市值高低
+            }).forEach(h => {
+                // 自動以現值與股數反推計算出目前單價
+                const currentPrice = h.shares > 0 ? (h.value / h.shares).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                
                 const div = document.createElement('div');
                 div.className = "flex justify-between items-center border-b border-slate-50 py-4 last:border-0";
                 div.innerHTML = `
@@ -528,10 +546,13 @@
                         <div class="w-2 h-10 rounded-full mr-4 shadow-sm" style="background:${h.color}"></div>
                         <div>
                             <div class="text-base font-black text-slate-800">${h.name}</div>
+                            <!-- 修改區塊：移除報價的綠色字體，改為質感灰色 -->
                             <div class="text-xs text-slate-500 font-black uppercase tracking-tight flex items-center gap-2 mt-1">
                                 <span class="font-mono text-slate-400">${h.id}</span>
                                 <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
                                 <span>${(h.shares || 0).toLocaleString()} 股</span>
+                                <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                                <span class="font-mono text-slate-500">$${currentPrice}</span>
                             </div>
                         </div>
                     </div>
