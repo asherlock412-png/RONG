@@ -81,7 +81,7 @@
                 <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden ring-1 ring-slate-700">
                     <div id="goal-progress-bar" class="bg-gradient-to-r from-blue-500 via-teal-400 to-emerald-400 h-full rounded-full transition-all duration-1500 ease-out w-0"></div>
                 </div>
-                <div class="flex justify-between mt-2 text-[10px] font-mono font-bold text-slate-400">
+                <div class="flex justify-between mt-2 text-xs sm:text-sm font-mono font-bold text-slate-400 tracking-wide">
                     <span id="current-val-display">---</span>
                     <span id="goal-val-display">$10,000,000</span>
                 </div>
@@ -92,6 +92,7 @@
                 <button onclick="switchTab('diagnosis')" id="btn-diagnosis" class="flex-none px-4 py-2.5 rounded-lg transition-all tab-active">配置分析</button>
                 <button onclick="switchTab('plan')" id="btn-plan" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">定期計畫</button>
                 <button onclick="switchTab('tracker')" id="btn-tracker" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">扣款行程</button>
+                <button onclick="switchTab('dividend')" id="btn-dividend" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">配息資訊</button>
                 <button onclick="switchTab('calculator')" id="btn-calculator" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">財富願景</button>
             </div>
         </div>
@@ -153,7 +154,28 @@
             <div id="tracker-list" class="space-y-3"></div>
         </div>
 
-        <!-- Tab 4: Calculator (財富願景) -->
+        <!-- Tab 4: Dividend (配息資訊 - 全新圖卡風格) -->
+        <div id="tab-dividend" class="hidden p-4 space-y-5 animate-in fade-in duration-500">
+            
+            <!-- 頂部總結白皮大卡片 -->
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(244,63,94,0.12)] flex flex-col items-center mt-2 relative overflow-hidden border border-rose-50/50">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="text-[11px] font-black text-slate-400 uppercase tracking-widest">預估年度總配息</div>
+                    <div id="div-overall-yield" class="text-[10px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">均殖利率 0%</div>
+                </div>
+                <div id="div-annual-total" class="text-[2.75rem] font-black text-slate-900 tracking-tighter mb-6 leading-none">$0</div>
+                
+                <div class="bg-[#f43f5e] text-white px-6 py-2.5 rounded-full text-sm font-black tracking-widest flex items-center shadow-lg shadow-rose-200">
+                    <span class="mr-2 opacity-90">💰</span>
+                    <span id="div-monthly-avg">平均每月領 : $0</span>
+                </div>
+            </div>
+
+            <!-- 配息標的列表 -->
+            <div id="dividend-list" class="space-y-3.5 mt-6"></div>
+        </div>
+
+        <!-- Tab 5: Calculator (財富願景) -->
         <div id="tab-calculator" class="hidden p-4 space-y-6 animate-in fade-in duration-500">
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-md space-y-8">
                 <div>
@@ -212,7 +234,7 @@
                 <div class="space-y-6">
                     <!-- 現有版圖 -->
                     <div>
-                        <div class="flex justify-between text-[11px] font-black text-slate-400 mb-2 uppercase tracking-widest">
+                        <div class="flex justify-between text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
                             <span>現有庫存真實比重</span>
                         </div>
                         <div id="current-region-bar" class="flex h-2.5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
@@ -220,7 +242,7 @@
                     
                     <!-- 預估版圖 -->
                     <div>
-                        <div class="flex justify-between text-[11px] font-black text-blue-500 mb-2 uppercase tracking-widest">
+                        <div class="flex justify-between text-xs font-black text-blue-500 mb-2 uppercase tracking-widest">
                             <span>計畫執行後修正比重</span>
                         </div>
                         <div id="future-region-bar" class="flex h-5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100 ring-2 ring-blue-50"></div>
@@ -276,27 +298,54 @@
 
     <script>
         // --- 資料狀態管理 (支援 LocalStorage) ---
+        // 包含 divPerShare (每股配息) 與 yield (殖利率) 預設值
         const defaultData = {
             principal: 4642206, // 已扣除賣掉的標的總和
             monthly: 60000,
             goal: 10000000,
             sheetUrl: '', // 試算表 CSV 的網址
             holdings: [
-                { id: '2330', name: '台積電', shares: 1000, value: 1940000, color: '#ef4444' }, 
-                { id: '0050', name: '元大台灣50', shares: 14000, value: 1105300, color: '#f87171' },
-                { id: '0052', name: '富邦科技', shares: 16000, value: 748640, color: '#dc2626' },
-                { id: '00631L', name: '台灣50正2', shares: 6000, value: 136560, color: '#b91c1c' },
-                { id: '00757', name: '統一FANG+', shares: 3000, value: 330150, color: '#3b82f6' }, 
-                { id: '00646', name: '元大S&P500', shares: 803, value: 54323, color: '#2563eb' },
-                { id: '00662', name: '富邦NASDAQ', shares: 425, value: 43159, color: '#8b5cf6' }, 
-                { id: '00955', name: '中信日本商社', shares: 12314, value: 199487, color: '#f97316' }, 
-                { id: '009805', name: '新光美國電力', shares: 3499, value: 54095, color: '#eab308' }, 
-                { id: '00981A', name: '統一台股增長', shares: 1348, value: 30492, color: '#10b981' }
+                { id: '2330', name: '台積電', shares: 1000, value: 1940000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
+                { id: '0050', name: '元大台灣50', shares: 14000, value: 1105300, color: '#f87171', divPerShare: 0, yield: 2.5 }, // 0050 改為殖利率計
+                { id: '0052', name: '富邦科技', shares: 16000, value: 748640, color: '#dc2626', divPerShare: 1.199, yield: 0 },
+                { id: '00631L', name: '台灣50正2', shares: 6000, value: 136560, color: '#b91c1c', divPerShare: 0, yield: 0 },
+                { id: '00757', name: '統一FANG+', shares: 3000, value: 330150, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
+                { id: '00646', name: '元大S&P500', shares: 803, value: 54323, color: '#2563eb', divPerShare: 0, yield: 0 },
+                { id: '00662', name: '富邦NASDAQ', shares: 425, value: 43159, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
+                { id: '00955', name: '中信日本商社', shares: 12314, value: 199487, color: '#f97316', divPerShare: 0, yield: 0 }, 
+                { id: '009805', name: '新光美國電力', shares: 3499, value: 54095, color: '#eab308', divPerShare: 0, yield: 0 }, 
+                { id: '00981A', name: '統一台股增長', shares: 1348, value: 30492, color: '#10b981', divPerShare: 0, yield: 0 }
             ]
         };
 
         // 從 localStorage 讀取或使用預設資料
         let appData = JSON.parse(localStorage.getItem('investment_60_data_v6')) || JSON.parse(JSON.stringify(defaultData));
+
+        // 向下相容：確保新的配息邏輯 (雙軌制) 生效
+        appData.holdings.forEach(h => {
+            // 如果遇到沒有正確設定屬性的情況，套用您的客製化規則
+            if (h.id === '0050' && h.divPerShare === 3.5) {
+                // 如果先前讀取到 0050 還是 3.5 每股配息，就覆蓋為殖利率 2.5%
+                h.divPerShare = 0;
+                h.yield = 2.5;
+            } else if (h.id === '0050' && h.yield === undefined) {
+                h.yield = 2.5;
+                h.divPerShare = 0;
+            } else if (h.divPerShare === undefined && h.yield === undefined) {
+                if (['00955', '009805', '00662', '00646', '00981A', '00757', '00631L'].includes(h.id)) {
+                    h.divPerShare = 0;
+                    h.yield = 0;
+                } else if (h.id === '2330') {
+                    h.divPerShare = 24; 
+                    h.yield = 0;
+                } else if (h.id === '0052') {
+                    h.divPerShare = 1.199;
+                    h.yield = 0;
+                }
+            }
+            if (h.yield === undefined) h.yield = 0;
+            if (h.divPerShare === undefined) h.divPerShare = 0;
+        });
 
         // 圖表全域變數
         let growthChartInstance = null;
@@ -405,7 +454,7 @@
         }
 
         function switchTab(tab) {
-            ['diagnosis', 'plan', 'tracker', 'calculator'].forEach(t => {
+            ['diagnosis', 'plan', 'tracker', 'dividend', 'calculator'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 document.getElementById(`btn-${t}`).classList.remove('tab-active');
                 document.getElementById(`btn-${t}`).classList.add('text-slate-400');
@@ -546,7 +595,6 @@
                         <div class="w-2 h-10 rounded-full mr-4 shadow-sm" style="background:${h.color}"></div>
                         <div>
                             <div class="text-base font-black text-slate-800">${h.name}</div>
-                            <!-- 修改區塊：移除報價的綠色字體，改為質感灰色 -->
                             <div class="text-xs text-slate-500 font-black uppercase tracking-tight flex items-center gap-2 mt-1">
                                 <span class="font-mono text-slate-400">${h.id}</span>
                                 <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
@@ -565,6 +613,101 @@
             });
             
             document.getElementById('holdings-summary').innerText = (appData.principal / 1000000).toFixed(2) + 'M Assets';
+        }
+
+        // --- 根據股號分配美觀的圖示與頻率 ---
+        function getDividendIconAndFreq(id, name) {
+            const data = {
+                '2330': { icon: '🏭', freq: '每季' },
+                '0050': { icon: '🇹🇼', freq: '半年' },
+                '0052': { icon: '💻', freq: '半年' },
+                '00757': { icon: '🦅', freq: '每年' },
+                '00646': { icon: '🌎', freq: '每年' },
+                '00662': { icon: '🚀', freq: '每年' },
+                '00955': { icon: '🌸', freq: '每季' },
+                '009805': { icon: '⚡', freq: '每季' },
+                '00981A': { icon: '📈', freq: '每年' }
+            };
+            
+            // 如果不在清單內，使用預設值
+            if(data[id]) return data[id];
+            
+            // 透過名稱關鍵字猜測
+            if (name.includes('債')) return { icon: '🔥', freq: '每月' };
+            if (name.includes('科技') || name.includes('電')) return { icon: '📅', freq: '每年' };
+            if (name.includes('大盤') || name.includes('50')) return { icon: '📊', freq: '半年' };
+            
+            return { icon: '🏢', freq: '每年' };
+        }
+
+        // --- 配息資訊渲染邏輯 (全新卡片視覺版 - 支援殖利率與金額雙軌制) ---
+        function initDividend() {
+            let totalDividend = 0;
+            const list = document.getElementById('dividend-list');
+            list.innerHTML = '';
+
+            // 依據預估配息金額由高到低排序
+            const divData = appData.holdings.map(h => {
+                const y = h.yield || 0;
+                const dps = h.divPerShare || 0;
+                let est = 0;
+                
+                // 優先判定是否使用殖利率計算，否則用每股配息算
+                if (y > 0) {
+                    est = Math.round(h.value * (y / 100));
+                } else {
+                    est = Math.round(h.shares * dps);
+                }
+                return { ...h, estDiv: est, activeYield: y, activeDps: dps };
+            }).sort((a, b) => b.estDiv - a.estDiv);
+
+            divData.forEach(h => {
+                totalDividend += h.estDiv;
+
+                // 只有會配息的標的才顯示在列表中
+                if (h.estDiv > 0) {
+                    const styleData = getDividendIconAndFreq(h.id, h.name);
+                    
+                    // 根據使用者設定的方式決定文字顯示
+                    let infoText = "";
+                    if (h.activeYield > 0) {
+                        infoText = `殖利率計 : <span class="text-slate-500 font-mono">${h.activeYield}%</span>`;
+                    } else {
+                        infoText = `每股配 : <span class="text-slate-500 font-mono">$${h.activeDps}</span>`;
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-5 bg-white rounded-[1.5rem] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.03)] border border-rose-50/60";
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-2xl mr-4 shadow-inner">
+                                ${styleData.icon}
+                            </div>
+                            <div>
+                                <div class="font-black text-slate-800 text-[15px]">${h.name}</div>
+                                <div class="text-xs text-slate-400 font-bold mt-1">
+                                    頻率 : <span class="text-slate-500">${styleData.freq}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-[#f43f5e] text-[17px] tracking-tight">
+                                $${formatCurrency(h.estDiv).replace('$', '')}<span class="text-[10px] text-slate-400 ml-0.5">/年</span>
+                            </div>
+                            <div class="text-xs text-slate-400 font-bold mt-1">${infoText}</div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                }
+            });
+
+            // 更新配息總覽數據卡片
+            document.getElementById('div-annual-total').innerText = formatCurrency(totalDividend);
+            document.getElementById('div-monthly-avg').innerText = `平均每月領 : ${formatCurrency(totalDividend / 12)}`;
+            
+            // 計算投資組合整體平均殖利率
+            const avgYield = appData.principal > 0 ? (totalDividend / appData.principal) * 100 : 0;
+            document.getElementById('div-overall-yield').innerText = `均殖利率 ${avgYield.toFixed(2)}%`;
         }
 
         // --- 動態區域推演更新函數 ---
@@ -622,18 +765,18 @@
 
                 const isGrowing = futurePct > currentPct;
                 const trendIcon = isGrowing 
-                    ? `<svg class="w-3 h-3 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>` 
-                    : `<svg class="w-3 h-3 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>`;
+                    ? `<svg class="w-3.5 h-3.5 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>` 
+                    : `<svg class="w-3.5 h-3.5 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>`;
 
                 const legDiv = document.createElement('div');
                 legDiv.innerHTML = `
                     <div class="flex items-center mb-1.5">
-                        <div class="w-2 h-2 rounded-full mr-1.5" style="background:${data.color}"></div>
-                        <span class="text-[11px] font-black text-slate-600">${data.name}</span>
+                        <div class="w-2.5 h-2.5 rounded-full mr-2" style="background:${data.color}"></div>
+                        <span class="text-xs font-black text-slate-600 tracking-wider">${data.name}</span>
                     </div>
-                    <div class="pl-3.5 space-y-0.5">
-                        <div class="text-[10px] text-slate-400 font-mono font-bold">現: ${currentPct.toFixed(1)}%</div>
-                        <div class="text-xs font-black font-mono flex items-center gap-1" style="color:${data.color}">
+                    <div class="pl-4 space-y-1">
+                        <div class="text-xs text-slate-400 font-mono font-bold">現: ${currentPct.toFixed(1)}%</div>
+                        <div class="text-sm font-black font-mono flex items-center gap-1" style="color:${data.color}">
                             預: ${futurePct.toFixed(1)}% ${Math.abs(futurePct - currentPct) > 0.5 ? trendIcon : ''}
                         </div>
                     </div>
@@ -814,23 +957,31 @@
                 <div class="pt-2">
                     <h3 class="text-sm font-black text-slate-800 mb-3 flex items-center">
                         <span class="w-1 h-4 bg-slate-800 rounded-full mr-2"></span>
-                        持股明細調整 (股數 / 總額)
+                        持股明細調整 
                     </h3>
                     <div class="space-y-3" id="edit-holdings-list">
                         ${appData.holdings.map((h, i) => `
-                            <div class="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex-wrap gap-2">
-                                <div class="flex items-center w-full sm:w-[40%]">
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                <div class="flex items-center mb-2">
                                     <div class="w-2 h-2 rounded-full mr-2" style="background:${h.color}"></div>
-                                    <div class="text-xs font-bold text-slate-700 truncate">${h.name}</div>
+                                    <div class="text-[13px] font-black text-slate-700 tracking-wider">${h.name} <span class="text-[10px] font-mono text-slate-400 ml-1">${h.id}</span></div>
                                 </div>
-                                <div class="flex w-full sm:w-[55%] gap-2">
-                                    <div class="w-1/3 relative">
-                                        <span class="absolute left-2 top-2.5 text-[10px] text-slate-400 font-mono">股</span>
-                                        <input type="number" id="edit-holding-shares-${i}" value="${h.shares || 0}" class="w-full pl-6 pr-1 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="relative">
+                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">股數</span>
+                                        <input type="number" id="edit-holding-shares-${i}" value="${h.shares || 0}" class="w-full pl-9 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
                                     </div>
-                                    <div class="w-2/3 relative">
-                                        <span class="absolute left-2 top-2.5 text-[10px] text-slate-400 font-mono">$</span>
-                                        <input type="number" id="edit-holding-value-${i}" value="${h.value}" class="w-full pl-6 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500">
+                                    <div class="relative">
+                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">總值$</span>
+                                        <input type="number" id="edit-holding-value-${i}" value="${h.value}" class="w-full pl-10 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                    </div>
+                                    <div class="relative">
+                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">每股配$</span>
+                                        <input type="number" step="0.001" id="edit-holding-div-${i}" value="${h.divPerShare || 0}" class="w-full pl-14 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                    </div>
+                                    <div class="relative">
+                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">殖利率%</span>
+                                        <input type="number" step="0.1" id="edit-holding-yield-${i}" value="${h.yield || 0}" class="w-full pl-14 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
                                     </div>
                                 </div>
                             </div>
@@ -855,6 +1006,8 @@
             appData.holdings.forEach((h, i) => {
                 h.shares = Number(document.getElementById(`edit-holding-shares-${i}`).value);
                 h.value = Number(document.getElementById(`edit-holding-value-${i}`).value);
+                h.divPerShare = Number(document.getElementById(`edit-holding-div-${i}`).value);
+                h.yield = Number(document.getElementById(`edit-holding-yield-${i}`).value);
                 newPrincipal += h.value;
             });
             
@@ -867,7 +1020,7 @@
             // 更新畫面
             closeEditModal();
             refreshDashboard();
-            showToast('✅ 數據已儲存！');
+            showToast('✅ 數據與配息設定已儲存！');
         }
 
         function refreshDashboard() {
@@ -890,6 +1043,7 @@
             initPlan();     
             initTracker();
             initDiagnosis();
+            initDividend(); // 載入新的配息資訊
             calculate();
         }
 
@@ -900,8 +1054,9 @@
             initPlan();     
             initTracker();
             initDiagnosis();
+            initDividend(); // 載入新的配息資訊
             calculate();
-            switchTab('diagnosis'); 
+            switchTab('dividend');
         };
     </script>
 </body>
