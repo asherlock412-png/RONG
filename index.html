@@ -91,7 +91,6 @@
             <div class="flex mt-6 bg-white/10 p-1 rounded-xl text-sm font-bold backdrop-blur-md overflow-x-auto no-scrollbar gap-1">
                 <button onclick="switchTab('diagnosis')" id="btn-diagnosis" class="flex-none px-4 py-2.5 rounded-lg transition-all tab-active">配置分析</button>
                 <button onclick="switchTab('plan')" id="btn-plan" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">定期計畫</button>
-                <button onclick="switchTab('tracker')" id="btn-tracker" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">扣款行程</button>
                 <button onclick="switchTab('dividend')" id="btn-dividend" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">配息資訊</button>
                 <button onclick="switchTab('calculator')" id="btn-calculator" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">財富願景</button>
             </div>
@@ -113,45 +112,47 @@
                     </h3>
                     <span id="holdings-summary" class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Assets</span>
                 </div>
-                <div id="holdings-list" class="space-y-4 max-h-[450px] overflow-y-auto pr-1 custom-scroll"></div>
+                <div id="holdings-list" class="space-y-4"></div>
             </section>
         </div>
 
         <!-- Tab 2: Plan (定期計畫) -->
-        <div id="tab-plan" class="hidden p-4 space-y-4 animate-in fade-in duration-500">
-            <div class="flex justify-between items-end px-1 mb-2">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">6.0 核心戰略</h2>
-                    <p class="text-xs text-slate-400 uppercase font-black tracking-widest mt-1">Monthly Investment Plan</p>
+        <div id="tab-plan" class="hidden p-4 space-y-6 animate-in fade-in duration-500">
+            <div>
+                <div class="flex justify-between items-end px-1 mb-2">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800 tracking-tight">6.0 核心戰略</h2>
+                        <p class="text-xs text-slate-400 uppercase font-black tracking-widest mt-1">Monthly Investment Plan</p>
+                    </div>
+                    <div class="text-right">
+                        <div id="plan-monthly-total" class="text-2xl font-mono font-black text-blue-600">$60,000</div>
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">/ Month</div>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <div id="plan-monthly-total" class="text-2xl font-mono font-black text-blue-600">$60,000</div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">/ Month</div>
+
+                <!-- 計畫比例條 -->
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-black text-slate-500">單月配置比例</span>
+                    </div>
+                    <div id="plan-bar" class="flex h-4 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                 </div>
+
+                <!-- 計畫列表 -->
+                <div id="plan-list" class="space-y-3"></div>
             </div>
 
-            <!-- 計畫比例條 -->
-            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-4">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs font-black text-slate-500">單月配置比例</span>
+            <!-- 下半部：執行進度 (原 Tab 3 合併至此) -->
+            <div class="pt-4 border-t-2 border-slate-100 border-dashed">
+                <div class="flex justify-between items-end px-1 mb-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight">本月執行進度</h3>
+                        <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Automatic Investment List</p>
+                    </div>
+                    <div id="progress-percent" class="text-3xl font-black text-blue-600">0%</div>
                 </div>
-                <div id="plan-bar" class="flex h-4 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
+                <div id="tracker-list" class="space-y-3"></div>
             </div>
-
-            <!-- 計畫列表 -->
-            <div id="plan-list" class="space-y-3"></div>
-        </div>
-
-        <!-- Tab 3: Tracker (扣款行程) -->
-        <div id="tab-tracker" class="hidden p-4 space-y-4 animate-in fade-in duration-500">
-            <div class="flex justify-between items-end px-1 mb-2">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">本月執行進度</h2>
-                    <p class="text-xs text-slate-400 uppercase font-black tracking-widest">Automatic Investment List</p>
-                </div>
-                <div id="progress-percent" class="text-4xl font-black text-blue-600">0%</div>
-            </div>
-            <div id="tracker-list" class="space-y-3"></div>
         </div>
 
         <!-- Tab 4: Dividend (配息資訊 - 全新圖卡風格) -->
@@ -454,7 +455,7 @@
         }
 
         function switchTab(tab) {
-            ['diagnosis', 'plan', 'tracker', 'dividend', 'calculator'].forEach(t => {
+            ['diagnosis', 'plan', 'dividend', 'calculator'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 document.getElementById(`btn-${t}`).classList.remove('tab-active');
                 document.getElementById(`btn-${t}`).classList.add('text-slate-400');
@@ -960,36 +961,64 @@
                         持股明細調整 
                     </h3>
                     <div class="space-y-3" id="edit-holdings-list">
-                        ${appData.holdings.map((h, i) => `
+                        ${appData.holdings.map((h, i) => {
+                            const currentPrice = h.shares > 0 ? (h.value / h.shares).toFixed(2) : 0;
+                            return `
                             <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
                                 <div class="flex items-center mb-2">
                                     <div class="w-2 h-2 rounded-full mr-2" style="background:${h.color}"></div>
                                     <div class="text-[13px] font-black text-slate-700 tracking-wider">${h.name} <span class="text-[10px] font-mono text-slate-400 ml-1">${h.id}</span></div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div class="relative">
-                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">股數</span>
-                                        <input type="number" id="edit-holding-shares-${i}" value="${h.shares || 0}" class="w-full pl-9 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex gap-2">
+                                        <div class="relative w-1/3">
+                                            <span class="absolute left-2 top-[9px] text-[10px] text-slate-400 font-black">股價$</span>
+                                            <input type="number" step="0.01" id="edit-holding-price-${i}" value="${currentPrice}" oninput="updateHoldingValue(${i})" class="w-full pl-11 pr-1 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                        </div>
+                                        <div class="relative w-1/3">
+                                            <span class="absolute left-2 top-[9px] text-[10px] text-slate-400 font-black">股數</span>
+                                            <input type="number" id="edit-holding-shares-${i}" value="${h.shares || 0}" oninput="updateHoldingValue(${i})" class="w-full pl-9 pr-1 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                        </div>
+                                        <div class="relative w-1/3">
+                                            <span class="absolute left-2 top-[9px] text-[10px] text-slate-400 font-black">總值$</span>
+                                            <input type="number" id="edit-holding-value-${i}" value="${h.value}" oninput="updateHoldingPrice(${i})" class="w-full pl-11 pr-1 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                        </div>
                                     </div>
-                                    <div class="relative">
-                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">總值$</span>
-                                        <input type="number" id="edit-holding-value-${i}" value="${h.value}" class="w-full pl-10 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
-                                    </div>
-                                    <div class="relative">
-                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">每股配$</span>
-                                        <input type="number" step="0.001" id="edit-holding-div-${i}" value="${h.divPerShare || 0}" class="w-full pl-14 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
-                                    </div>
-                                    <div class="relative">
-                                        <span class="absolute left-2.5 top-[9px] text-[10px] text-slate-400 font-black">殖利率%</span>
-                                        <input type="number" step="0.1" id="edit-holding-yield-${i}" value="${h.yield || 0}" class="w-full pl-14 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                    <div class="flex gap-2">
+                                        <div class="relative w-1/2">
+                                            <span class="absolute left-2 top-[9px] text-[10px] text-slate-400 font-black">每股配$</span>
+                                            <input type="number" step="0.001" id="edit-holding-div-${i}" value="${h.divPerShare || 0}" class="w-full pl-14 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                        </div>
+                                        <div class="relative w-1/2">
+                                            <span class="absolute left-2 top-[9px] text-[10px] text-slate-400 font-black">殖利率%</span>
+                                            <input type="number" step="0.1" id="edit-holding-yield-${i}" value="${h.yield || 0}" class="w-full pl-14 pr-2 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 </div>
             `;
             document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        // --- 股價與總值自動連動計算邏輯 ---
+        function updateHoldingValue(i) {
+            const shares = Number(document.getElementById(`edit-holding-shares-${i}`).value) || 0;
+            const price = Number(document.getElementById(`edit-holding-price-${i}`).value) || 0;
+            document.getElementById(`edit-holding-value-${i}`).value = Math.round(shares * price);
+        }
+
+        function updateHoldingPrice(i) {
+            const shares = Number(document.getElementById(`edit-holding-shares-${i}`).value) || 0;
+            const value = Number(document.getElementById(`edit-holding-value-${i}`).value) || 0;
+            if (shares > 0) {
+                document.getElementById(`edit-holding-price-${i}`).value = (value / shares).toFixed(2);
+            } else {
+                document.getElementById(`edit-holding-price-${i}`).value = 0;
+            }
         }
 
         function closeEditModal() {
@@ -1056,7 +1085,7 @@
             initDiagnosis();
             initDividend(); // 載入新的配息資訊
             calculate();
-            switchTab('dividend');
+            switchTab('plan');
         };
     </script>
 </body>
