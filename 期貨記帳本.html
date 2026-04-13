@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>策略期貨記帳本</title>
+  
+  <!-- 載入 Tailwind CSS (樣式) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 載入 FontAwesome (圖示) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- 載入 React 與 ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- 載入 Babel (讓瀏覽器能看懂 React 語法) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* 自訂捲軸樣式，讓畫面更精緻 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-50">
+
+  <!-- React 應用的掛載點 -->
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    function App() {
+      // --- 預設歷史資料 ---
+      const today = new Date();
+      const currentMonthStr = today.toISOString().slice(0, 7);
+      
+      const initialTrades = [
+        // --- 原有 3月份 KD向上 策略資料 (29筆) ---
+        { id: 't1', date: '2026-03-04', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33419, exitPrice: 33605, pointsDiff: 186, fees: 103, netPnL: 9197 },
+        { id: 't2', date: '2026-03-04', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33707, exitPrice: 33605, pointsDiff: -102, fees: 104, netPnL: -5204 },
+        { id: 't3', date: '2026-03-06', symbol: 'MTX', multiplier: 50, type: 'short', contracts: 1, strategy: 'KD向上', entryPrice: 33648, exitPrice: 33629, pointsDiff: 19, fees: 104, netPnL: 846 },
+        { id: 't4', date: '2026-03-06', symbol: 'MTX', multiplier: 50, type: 'short', contracts: 1, strategy: 'KD向上', entryPrice: 33648, exitPrice: 33595, pointsDiff: 53, fees: 104, netPnL: 2546 },
+        { id: 't5', date: '2026-03-11', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33678, exitPrice: 33778, pointsDiff: 100, fees: 104, netPnL: 4896 },
+        { id: 't6', date: '2026-03-11', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33180, exitPrice: 33280, pointsDiff: 100, fees: 102, netPnL: 4898 },
+        { id: 't7', date: '2026-03-11', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33332, exitPrice: 33432, pointsDiff: 100, fees: 102, netPnL: 4898 },
+        { id: 't8', date: '2026-03-13', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33219, exitPrice: 33321, pointsDiff: 102, fees: 102, netPnL: 4998 },
+        { id: 't9', date: '2026-03-13', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33725, exitPrice: 33825, pointsDiff: 100, fees: 104, netPnL: 4896 },
+        { id: 't10', date: '2026-03-13', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33974, exitPrice: 33825, pointsDiff: -149, fees: 104, netPnL: -7554 },
+        { id: 't11', date: '2026-03-13', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33824, exitPrice: 33825, pointsDiff: 1, fees: 104, netPnL: -54 },
+        { id: 't12', date: '2026-03-13', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33863, exitPrice: 33825, pointsDiff: -38, fees: 104, netPnL: -2004 },
+        { id: 't13', date: '2026-03-16', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33330, exitPrice: 33430, pointsDiff: 100, fees: 102, netPnL: 4898 },
+        { id: 't14', date: '2026-03-16', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33282, exitPrice: 33382, pointsDiff: 100, fees: 102, netPnL: 4898 },
+        { id: 't15', date: '2026-03-18', symbol: 'MTX', multiplier: 50, type: 'short', contracts: 1, strategy: 'KD向上', entryPrice: 34424, exitPrice: 34234, pointsDiff: 190, fees: 104, netPnL: 9396 },
+        { id: 't16', date: '2026-03-18', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33903, exitPrice: 33903, pointsDiff: 0, fees: 104, netPnL: -104 },
+        { id: 't17', date: '2026-03-18', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33903, exitPrice: 34005, pointsDiff: 102, fees: 104, netPnL: 4996 },
+        { id: 't18', date: '2026-03-19', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33946, exitPrice: 34046, pointsDiff: 100, fees: 104, netPnL: 4896 },
+        { id: 't19', date: '2026-03-19', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 34545, exitPrice: 34600, pointsDiff: 55, fees: 106, netPnL: 2644 },
+        { id: 't20', date: '2026-03-19', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 34496, exitPrice: 34600, pointsDiff: 104, fees: 105, netPnL: 5095 },
+        { id: 't21', date: '2026-03-20', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33322, exitPrice: 33422, pointsDiff: 100, fees: 102, netPnL: 4898 },
+        { id: 't22', date: '2026-03-23', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 32698, exitPrice: 32801, pointsDiff: 103, fees: 102, netPnL: 5048 },
+        { id: 't23', date: '2026-03-24', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 32462, exitPrice: 32565, pointsDiff: 103, fees: 101, netPnL: 5049 },
+        { id: 't24', date: '2026-03-25', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33231, exitPrice: 33285, pointsDiff: 54, fees: 102, netPnL: 2598 },
+        { id: 't25', date: '2026-03-26', symbol: 'MTX', multiplier: 50, type: 'short', contracts: 1, strategy: 'KD向上', entryPrice: 33895, exitPrice: 33792, pointsDiff: 103, fees: 104, netPnL: 5046 },
+        { id: 't26', date: '2026-03-26', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33659, exitPrice: 33762, pointsDiff: 103, fees: 104, netPnL: 5046 },
+        { id: 't27', date: '2026-03-27', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 32765, exitPrice: 32870, pointsDiff: 105, fees: 102, netPnL: 5148 },
+        { id: 't28', date: '2026-03-30', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 32495, exitPrice: 32560, pointsDiff: 65, fees: 101, netPnL: 3149 },
+        { id: 't29', date: '2026-03-30', symbol: 'MTX', multiplier: 50, type: 'short', contracts: 1, strategy: 'KD向上', entryPrice: 32560, exitPrice: 32583, pointsDiff: -23, fees: 102, netPnL: -1252 },
+        
+        // --- 新增 3月份 MACD 策略資料 (10筆) ---
+        { id: 'm1', date: '2026-03-09', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 33705, exitPrice: 33760, pointsDiff: 55, fees: 148, netPnL: 2602 },
+        { id: 'm2', date: '2026-03-10', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 32135, exitPrice: 32220, pointsDiff: 85, fees: 144, netPnL: 4106 },
+        { id: 'm3', date: '2026-03-11', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 32677, exitPrice: 32735, pointsDiff: 58, fees: 148, netPnL: 2752 },
+        { id: 'm4', date: '2026-03-16', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 33430, exitPrice: 33462, pointsDiff: 32, fees: 146, netPnL: 1454 },
+        { id: 'm5', date: '2026-03-18', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 34227, exitPrice: 34312, pointsDiff: 85, fees: 148, netPnL: 4102 },
+        { id: 'm6', date: '2026-03-24', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 33120, exitPrice: 33205, pointsDiff: 85, fees: 146, netPnL: 4104 },
+        { id: 'm7', date: '2026-03-25', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 33165, exitPrice: 33250, pointsDiff: 85, fees: 146, netPnL: 4104 },
+        { id: 'm8', date: '2026-03-25', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 33180, exitPrice: 33265, pointsDiff: 85, fees: 146, netPnL: 4104 },
+        { id: 'm9', date: '2026-03-31', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 32340, exitPrice: 32060, pointsDiff: -280, fees: 146, netPnL: -14146 },
+        { id: 'm10', date: '2026-03-31', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 32560, exitPrice: 32852, pointsDiff: 292, fees: 146, netPnL: 14454 },
+        
+        // --- 新增 4月份 KD向上 策略資料 (6筆) ---
+        { id: 't30', date: '2026-04-01', symbol: 'MTX', multiplier: 50, type: 'short', contracts: 1, strategy: 'KD向上', entryPrice: 32200, exitPrice: 32033, pointsDiff: 167, fees: 100, netPnL: 8250 },
+        { id: 't31', date: '2026-04-01', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 32351, exitPrice: 32200, pointsDiff: -151, fees: 100, netPnL: -7650 },
+        { id: 't32', date: '2026-04-02', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33761, exitPrice: 33864, pointsDiff: 103, fees: 104, netPnL: 5046 },
+        { id: 't33', date: '2026-04-07', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 32276, exitPrice: 32376, pointsDiff: 100, fees: 100, netPnL: 4900 },
+        { id: 't34', date: '2026-04-08', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 33284, exitPrice: 33386, pointsDiff: 102, fees: 102, netPnL: 4998 },
+        { id: 't35', date: '2026-04-10', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'KD向上', entryPrice: 34890, exitPrice: 34992, pointsDiff: 102, fees: 106, netPnL: 4994 },
+        
+        // --- 新增 4月份 MACD 策略資料 (1筆) ---
+        { id: 'm11', date: '2026-04-01', symbol: 'MTX', multiplier: 50, type: 'long', contracts: 1, strategy: 'MACD', entryPrice: 32105, exitPrice: 32170, pointsDiff: 65, fees: 144, netPnL: 3106 },
+      ];
+
+      // --- 狀態管理：優先讀取 localStorage ---
+      const [trades, setTrades] = useState(() => {
+        const savedTrades = localStorage.getItem('futuresTrades');
+        return savedTrades ? JSON.parse(savedTrades) : initialTrades;
+      });
+
+      const [selectedMonth, setSelectedMonth] = useState('2026-04');
+      const [activeTab, setActiveTab] = useState('KD向上');
+      
+      const [formData, setFormData] = useState({
+        date: new Date().toISOString().split('T')[0],
+        type: 'long',
+        contracts: 1,
+        strategy: 'KD向上',
+        entryPrice: '',
+        exitPrice: '',
+        tax: 35 // 預設期交稅
+      });
+
+      // --- 自動存檔機制 ---
+      useEffect(() => {
+        localStorage.setItem('futuresTrades', JSON.stringify(trades));
+      }, [trades]);
+      
+      // 當月目標設定：依照 8.8計畫表 每月投入總額設定
+      const monthlyGoal = 88000; 
+
+      const availableMonths = useMemo(() => {
+        const months = new Set(trades.map(t => t.date.slice(0, 7)));
+        months.add(currentMonthStr);
+        return Array.from(months).sort().reverse();
+      }, [trades, currentMonthStr]);
+
+      // --- 過濾並強制按照日期排序 (舊到新) ---
+      const filteredTrades = useMemo(() => {
+        return trades
+          .filter(t => t.date.startsWith(selectedMonth))
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+      }, [trades, selectedMonth]);
+
+      const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const entry = parseFloat(formData.entryPrice);
+        const exit = parseFloat(formData.exitPrice);
+        const contracts = parseInt(formData.contracts);
+        const tax = parseFloat(formData.tax) || 0;
+        
+        if (isNaN(entry) || isNaN(exit)) return;
+
+        // 自動判斷手續費基數
+        const baseCommission = formData.strategy === 'KD向上' ? 36 : 80;
+        const multiplier = 50; // 小台
+        const totalFees = (baseCommission + tax) * contracts;
+
+        let pointsDiff = formData.type === 'long' ? exit - entry : entry - exit;
+        const grossPnL = pointsDiff * multiplier * contracts;
+        const netPnL = grossPnL - totalFees;
+
+        const newTrade = {
+          id: crypto.randomUUID(),
+          date: formData.date,
+          symbol: 'MTX',
+          multiplier,
+          type: formData.type,
+          contracts,
+          strategy: formData.strategy,
+          entryPrice: entry,
+          exitPrice: exit,
+          pointsDiff,
+          fees: totalFees,
+          netPnL
+        };
+
+        // 新增的資料直接加到陣列中，透過 useMemo 的 sort 會自動排到正確的時間點最下方
+        setTrades([...trades, newTrade]);
+        
+        const tradeMonth = formData.date.slice(0, 7);
+        if (tradeMonth !== selectedMonth) {
+          setSelectedMonth(tradeMonth);
+        }
+        
+        if (formData.strategy !== activeTab) {
+          setActiveTab(formData.strategy);
+        }
+
+        setFormData({ ...formData, entryPrice: '', exitPrice: '' });
+      };
+
+      const handleDelete = (id) => {
+        if(confirm("確定要刪除這筆紀錄嗎？")){
+          setTrades(trades.filter(t => t.id !== id));
+        }
+      };
+
+      const stats = useMemo(() => {
+        const totalTrades = filteredTrades.length;
+        const winningTrades = filteredTrades.filter(t => t.netPnL > 0);
+        
+        const winRate = totalTrades > 0 ? ((winningTrades.length / totalTrades) * 100).toFixed(1) : 0;
+        const totalPnL = filteredTrades.reduce((sum, t) => sum + t.netPnL, 0);
+        const avgPnL = totalTrades > 0 ? (totalPnL / totalTrades).toFixed(0) : 0;
+
+        const chronologicalTrades = [...filteredTrades]; // 已在 filteredTrades 中排序過了
+        let cumPnL = 0;
+        const equityData = [0]; 
+        chronologicalTrades.forEach(t => {
+          cumPnL += t.netPnL;
+          equityData.push(cumPnL);
+        });
+
+        const dailyPnLMap = filteredTrades.reduce((acc, t) => {
+          acc[t.date] = (acc[t.date] || 0) + t.netPnL;
+          return acc;
+        }, {});
+        const monthDays = Object.keys(dailyPnLMap).sort((a,b) => new Date(b) - new Date(a));
+        const recentDays = monthDays.map(date => ({ date, pnl: dailyPnLMap[date] }));
+
+        const planProgress = Math.min(Math.max((totalPnL / monthlyGoal) * 100, 0), 100);
+
+        return { totalTrades, winRate, totalPnL, avgPnL, equityData, recentDays, planProgress };
+      }, [filteredTrades]);
+
+      const groupedTrades = useMemo(() => {
+        const groups = {};
+        filteredTrades.forEach(t => {
+          if (!groups[t.strategy]) {
+            groups[t.strategy] = { trades: [], totalPnL: 0 };
+          }
+          groups[t.strategy].trades.push(t);
+          groups[t.strategy].totalPnL += t.netPnL;
+        });
+        return groups;
+      }, [filteredTrades]);
+
+      const activeTrades = groupedTrades[activeTab]?.trades || [];
+      const activeTotalPnL = groupedTrades[activeTab]?.totalPnL || 0;
+
+      const renderEquityCurve = () => {
+        const data = stats.equityData;
+        if (data.length <= 1) return null;
+
+        const maxVal = Math.max(...data, 1000);
+        const minVal = Math.min(...data, -1000);
+        const range = maxVal - minVal;
+        
+        const points = data.map((val, i) => {
+          const x = (i / (data.length - 1)) * 100;
+          const y = 40 - ((val - minVal) / range) * 40;
+          return `${x},${y}`;
+        }).join(' L ');
+
+        const endVal = data[data.length - 1];
+        const isPositive = endVal >= 0;
+
+        return (
+          <svg viewBox="0 -5 100 50" className="w-full h-40 overflow-visible">
+            <line x1="0" y1={40 - ((0 - minVal) / range) * 40} x2="100" y2={40 - ((0 - minVal) / range) * 40} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="2,2" />
+            <path d={`M ${points}`} fill="none" stroke={isPositive ? '#ef4444' : '#22c55e'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {data.length > 0 && (
+              <circle cx="100" cy={40 - ((endVal - minVal) / range) * 40} r="2" fill={isPositive ? '#ef4444' : '#22c55e'} />
+            )}
+          </svg>
+        );
+      };
+
+      const formatMoney = (num) => new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(num);
+      const getPnLColor = (pnl) => pnl > 0 ? 'text-red-500' : pnl < 0 ? 'text-green-500' : 'text-slate-500';
+
+      return (
+        <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 font-sans text-slate-800">
+          
+          {/* Sidebar */}
+          <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 shadow-xl z-10">
+            <div className="p-5 md:p-6 border-b border-slate-800 flex items-center justify-between md:justify-start">
+              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                <i className="fa-solid fa-chart-line text-blue-500 text-xl"></i>
+                策略記帳本
+              </h1>
+            </div>
+            <div className="p-4 md:flex-1 md:overflow-y-auto overflow-x-auto whitespace-nowrap">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 hidden md:block">
+                月份頁面切換
+              </div>
+              <nav className="flex md:flex-col gap-2">
+                {availableMonths.map(month => (
+                  <button
+                    key={month}
+                    onClick={() => setSelectedMonth(month)}
+                    className={`flex items-center gap-3 px-4 md:px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      selectedMonth === month ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <i className="fa-regular fa-calendar shrink-0"></i>
+                    <span>{month.replace('-', ' 年 ')} 月</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="max-w-6xl mx-auto space-y-6">
+              
+              <header className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-3">
+                <i className="fa-solid fa-table-columns text-slate-400 text-xl"></i>
+                <h2 className="text-xl font-bold text-slate-800">
+                  {selectedMonth.replace('-', ' 年 ')} 月 - 交易儀表板
+                </h2>
+              </header>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="col-span-1 md:col-span-5 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden">
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-2 opacity-90">
+                      <i className="fa-solid fa-bullseye text-lg"></i>
+                      <h2 className="font-medium text-sm">當月目標</h2>
+                    </div>
+                    <div className="text-3xl font-bold mb-6">{formatMoney(stats.totalPnL)} <span className="text-lg font-normal opacity-70">/ {formatMoney(monthlyGoal)}</span></div>
+                    
+                    <div className="w-full bg-black/20 rounded-full h-3 mb-2 backdrop-blur-sm">
+                      <div className="bg-green-400 h-3 rounded-full transition-all duration-1000 relative" style={{ width: `${stats.planProgress}%` }}>
+                        {stats.planProgress >= 100 && <i className="fa-solid fa-wand-magic-sparkles absolute -right-2 -top-4 text-yellow-300 animate-pulse"></i>}
+                      </div>
+                    </div>
+                    <div className="text-right text-xs font-medium text-green-300">{stats.planProgress.toFixed(0)}%</div>
+                  </div>
+                  <i className="fa-solid fa-chart-line absolute -right-6 -bottom-6 text-9xl text-white opacity-10"></i>
+                </div>
+
+                <div className="col-span-1 md:col-span-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[
+                    { label: '當月淨損益', val: stats.totalPnL, type: 'money' },
+                    { label: '當月勝率', val: `${stats.winRate}%`, type: 'text' },
+                    { label: '交易筆數', val: stats.totalTrades, type: 'text' },
+                    { label: '單筆平均', val: stats.avgPnL, type: 'money' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                      <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                        {item.label}
+                      </div>
+                      <div className={`text-lg font-bold ${item.type === 'money' ? getPnLColor(item.val) : 'text-slate-800'}`}>
+                        {item.type === 'money' && item.val > 0 ? '+' : ''}
+                        {item.type === 'money' ? formatMoney(item.val) : item.val}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
+                  <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-plus text-blue-500 text-lg"></i> 新增交易紀錄</h2>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">日期</label>
+                        <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">商品標的</label>
+                        <div className="w-full p-2 border border-slate-200 bg-slate-50 rounded-lg text-sm text-slate-500 text-center font-medium">
+                          小台指 (MTX)
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-slate-500 mb-1 flex items-center gap-1"><i className="fa-solid fa-flag text-xs"></i> 策略標籤</label>
+                        <select name="strategy" value={formData.strategy} onChange={handleInputChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-slate-50 font-bold text-slate-700">
+                          <option value="KD向上">KD向上</option>
+                          <option value="MACD">MACD</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">多/空方向</label>
+                        <div className="flex bg-slate-100 rounded-lg p-1">
+                          <button type="button" onClick={() => setFormData({...formData, type: 'long'})} className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs rounded-md transition-colors ${formData.type === 'long' ? 'bg-red-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}>做多</button>
+                          <button type="button" onClick={() => setFormData({...formData, type: 'short'})} className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs rounded-md transition-colors ${formData.type === 'short' ? 'bg-green-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}>做空</button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">交易口數</label>
+                        <input type="number" name="contracts" min="1" value={formData.contracts} onChange={handleInputChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" required />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">進場點位</label>
+                        <input type="number" step="any" name="entryPrice" value={formData.entryPrice} onChange={handleInputChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" placeholder="21000" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">出場點位</label>
+                        <input type="number" step="any" name="exitPrice" value={formData.exitPrice} onChange={handleInputChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" placeholder="21100" required />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mt-2 border-t border-slate-100 pt-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">期交稅 (每口)</label>
+                        <input type="number" name="tax" value={formData.tax} onChange={handleInputChange} className="w-full p-2 border border-slate-300 rounded-lg text-sm" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-500 mb-1">總交易成本</label>
+                        <div className="w-full p-2 border border-slate-200 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold flex items-center justify-center">
+                          {((formData.strategy === 'KD向上' ? 36 : 80) + (parseFloat(formData.tax) || 0)) * formData.contracts} 元
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors mt-2 text-sm">新增紀錄</button>
+                  </form>
+                </div>
+
+                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                  
+                  <div className="flex bg-slate-50 border-b border-slate-200">
+                    {['KD向上', 'MACD'].map(tab => {
+                      const tradeCount = groupedTrades[tab]?.trades.length || 0;
+                      return (
+                        <button
+                          key={tab}
+                          onClick={() => setActiveTab(tab)}
+                          className={`flex-1 py-3 text-sm font-bold transition-all border-b-2 ${
+                            activeTab === tab
+                              ? 'border-blue-600 text-blue-600 bg-white'
+                              : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {tab} 
+                          <span className="ml-1.5 text-xs font-normal opacity-80">({tradeCount} 筆)</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-col flex-1 max-h-[500px] overflow-y-auto">
+                    {activeTrades.length === 0 ? (
+                      <div className="p-10 text-center text-slate-400 text-sm">
+                        這個月還沒有「{activeTab}」策略的交易紀錄喔！
+                      </div>
+                    ) : (
+                      <>
+                        <div className="bg-slate-100/80 px-4 py-2 border-b border-slate-200 flex justify-between items-center sticky top-0 backdrop-blur-sm z-10">
+                          <span className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                            <i className="fa-solid fa-flag text-blue-500"></i>
+                            明細列表
+                          </span>
+                          <span className={`text-sm font-bold ${getPnLColor(activeTotalPnL)}`}>
+                            策略小計: {activeTotalPnL > 0 ? '+' : ''}{formatMoney(activeTotalPnL)}
+                          </span>
+                        </div>
+                        
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-xs text-slate-500 bg-white uppercase border-b border-slate-200">
+                            <tr>
+                              <th className="px-4 py-3 font-medium">日期</th>
+                              <th className="px-4 py-3 font-medium text-center">方向/口數</th>
+                              <th className="px-4 py-3 font-medium text-right">點數差</th>
+                              <th className="px-4 py-3 font-medium text-right">總成本</th>
+                              <th className="px-4 py-3 font-medium text-right">淨損益</th>
+                              <th className="px-4 py-3 font-medium text-center">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            {activeTrades.map((trade) => (
+                              <tr key={trade.id} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="px-4 py-3">
+                                  <div className="font-medium text-slate-800">{trade.symbol === 'TX' ? '大台' : '小台'}</div>
+                                  <div className="text-xs text-slate-500">{trade.date}</div>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${trade.type === 'long' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                    {trade.type === 'long' ? '多' : '空'} {trade.contracts}口
+                                  </span>
+                                </td>
+                                <td className={`px-4 py-3 text-right font-mono ${getPnLColor(trade.pointsDiff)}`}>
+                                  {trade.pointsDiff > 0 ? '+' : ''}{trade.pointsDiff}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-slate-500">
+                                  {trade.fees}
+                                </td>
+                                <td className={`px-4 py-3 text-right font-bold ${getPnLColor(trade.netPnL)}`}>
+                                  {trade.netPnL > 0 ? '+' : ''}{formatMoney(trade.netPnL)}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <button onClick={() => handleDelete(trade.id)} className="text-slate-400 hover:text-red-500 p-1"><i className="fa-solid fa-trash-can mx-auto"></i></button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                  <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-regular fa-calendar-days text-blue-500"></i> 當月盈虧日曆</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {stats.recentDays.length > 0 ? stats.recentDays.map((day) => (
+                      <div key={day.date} className="flex flex-col justify-center items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-xs text-slate-500 mb-1 font-medium">{day.date.split('-').slice(1).join('/')}</span>
+                        <span className={`text-sm font-bold ${getPnLColor(day.pnl)}`}>{day.pnl > 0 ? '+' : ''}{formatMoney(day.pnl)}</span>
+                      </div>
+                    )) : <div className="col-span-full text-center text-sm text-slate-400 py-2">無資料</div>}
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                  <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-arrow-trend-up text-blue-500"></i> 當月資金曲線 (Equity Curve)</h3>
+                  {stats.equityData.length > 1 ? renderEquityCurve() : <div className="h-40 flex items-center justify-center text-slate-400 text-sm">資料不足，請新增更多交易</div>}
+                </div>
+              </div>
+
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
