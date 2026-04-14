@@ -299,28 +299,28 @@
 
     <script>
         // --- 資料狀態管理 (支援 LocalStorage) ---
-        // 根據截圖更新了全部最新股數與市價總值，並設定 v7 key 以確保載入最新預設資料
+        // 根據截圖更新了全部最新股數與市價總值，並設定 v8 key 以確保載入最新預設資料
         const defaultData = {
-            principal: 4739718, // 更新後的總和
+            principal: 4844761, // 更新後的總和
             monthly: 60000,
             goal: 10000000,
             sheetUrl: '', // 試算表 CSV 的網址
             holdings: [
-                { id: '2330', name: '台積電', shares: 1000, value: 1990000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
-                { id: '0050', name: '元大台灣50', shares: 14000, value: 1128400, color: '#f87171', divPerShare: 0, yield: 2.5 },
-                { id: '0052', name: '富邦科技', shares: 16000, value: 765760, color: '#dc2626', divPerShare: 1.199, yield: 0 },
-                { id: '00631L', name: '台灣50正2', shares: 6000, value: 141720, color: '#b91c1c', divPerShare: 0, yield: 0 },
-                { id: '00757', name: '統一FANG+', shares: 3000, value: 333000, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
-                { id: '00646', name: '元大S&P500', shares: 803, value: 54403, color: '#2563eb', divPerShare: 0, yield: 0 },
-                { id: '00662', name: '富邦NASDAQ', shares: 425, value: 43286, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
-                { id: '00955', name: '中信日本商社', shares: 12314, value: 194561, color: '#f97316', divPerShare: 0, yield: 0 }, 
-                { id: '009805', name: '新光美國電力', shares: 3499, value: 55564, color: '#eab308', divPerShare: 0, yield: 0 }, 
-                { id: '00981A', name: '統一台股增長', shares: 1434, value: 33024, color: '#10b981', divPerShare: 0, yield: 0 }
+                { id: '2330', name: '台積電', shares: 1000, value: 2035000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
+                { id: '0050', name: '元大台灣50', shares: 14000, value: 1155000, color: '#f87171', divPerShare: 0, yield: 2.5 },
+                { id: '0052', name: '富邦科技', shares: 16000, value: 782720, color: '#dc2626', divPerShare: 1.199, yield: 0 },
+                { id: '00631L', name: '台灣50正2', shares: 6000, value: 147480, color: '#b91c1c', divPerShare: 0, yield: 0 },
+                { id: '00757', name: '統一FANG+', shares: 3000, value: 340650, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
+                { id: '00646', name: '元大S&P500', shares: 803, value: 55126, color: '#2563eb', divPerShare: 0, yield: 0 },
+                { id: '00662', name: '富邦NASDAQ', shares: 425, value: 44073, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
+                { id: '00955', name: '中信日本商社', shares: 12314, value: 194684, color: '#f97316', divPerShare: 0, yield: 0 }, 
+                { id: '009805', name: '新光美國電力', shares: 3499, value: 56229, color: '#eab308', divPerShare: 0, yield: 0 }, 
+                { id: '00981A', name: '統一台股增長', shares: 1434, value: 33800, color: '#10b981', divPerShare: 0, yield: 0 }
             ]
         };
 
-        // 從 localStorage 讀取或使用預設資料 (改用 v7 以強制刷新最新截圖資料)
-        let appData = JSON.parse(localStorage.getItem('investment_60_data_v7')) || JSON.parse(JSON.stringify(defaultData));
+        // 從 localStorage 讀取或使用預設資料 (改用 v8 以強制刷新最新截圖資料)
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v8')) || JSON.parse(JSON.stringify(defaultData));
 
         // 向下相容：確保新的配息邏輯 (雙軌制) 生效
         appData.holdings.forEach(h => {
@@ -437,7 +437,7 @@
 
                 if (updatedCount > 0) {
                     appData.principal = newPrincipal;
-                    localStorage.setItem('investment_60_data_v7', JSON.stringify(appData));
+                    localStorage.setItem('investment_60_data_v8', JSON.stringify(appData));
                     refreshDashboard();
                     showToast(`✅ 成功同步 ${updatedCount} 檔標的最新報價！`);
                 } else {
@@ -1042,7 +1042,7 @@
             appData.principal = newPrincipal;
 
             // 存入 LocalStorage
-            localStorage.setItem('investment_60_data_v7', JSON.stringify(appData));
+            localStorage.setItem('investment_60_data_v8', JSON.stringify(appData));
 
             // 更新畫面
             closeEditModal();
