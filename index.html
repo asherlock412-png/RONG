@@ -601,22 +601,8 @@
                 legend.appendChild(item);
             });
 
-            // 定義排序權重：台股(1) -> 美股(2) -> 日股(3)
-            const getRegionWeight = (id) => {
-                if (['2330', '0050', '0052', '00631L', '00981A'].includes(id)) return 1;
-                if (['00757', '00646', '00662', '009805'].includes(id)) return 2;
-                if (['00955', '00645'].includes(id)) return 3;
-                return 4;
-            };
-
-            appData.holdings.sort((a,b) => {
-                const weightA = getRegionWeight(a.id);
-                const weightB = getRegionWeight(b.id);
-                if (weightA !== weightB) {
-                    return weightA - weightB; // 跨區域排序：台 -> 美 -> 日
-                }
-                return b.value - a.value; // 同區域內排序：依市值高低
-            }).forEach(h => {
+            // 依據總金額 (市值) 由高到低排序
+            appData.holdings.sort((a, b) => b.value - a.value).forEach(h => {
                 // 自動以現值與股數反推計算出目前單價
                 const currentPrice = h.shares > 0 ? (h.value / h.shares).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                 
