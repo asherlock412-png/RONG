@@ -837,16 +837,27 @@
             const dataPoints = [];
             const goalDataPoints = []; 
             const r = annualRate / 100 / 12;
+            const totalMonths = years * 12;
 
-            for (let i = 0; i <= years; i++) {
-                labels.push(`第 ${i} 年`);
+            // 將原本的「年」迴圈細化為「每個月」迴圈
+            for (let m = 0; m <= totalMonths; m++) {
+                let currentYear = Math.floor(m / 12);
+                let currentMonth = m % 12;
+                
+                if (currentYear === 0 && currentMonth === 0) {
+                    labels.push('現在');
+                } else if (currentMonth === 0) {
+                    labels.push(`第 ${currentYear} 年`);
+                } else {
+                    labels.push(`第 ${currentYear} 年 ${currentMonth} 個月`);
+                }
+                
                 goalDataPoints.push(appData.goal); 
                 
-                if (i === 0) {
+                if (m === 0) {
                     dataPoints.push(principal);
                 } else {
-                    const n = i * 12; 
-                    const val = principal * Math.pow(1 + r, n) + monthly * ((Math.pow(1 + r, n) - 1) / r);
+                    const val = principal * Math.pow(1 + r, m) + monthly * ((Math.pow(1 + r, m) - 1) / r);
                     dataPoints.push(Math.round(val));
                 }
             }
@@ -911,7 +922,16 @@
                             }
                         },
                         scales: {
-                            x: { grid: { display: false }, ticks: { font: { family: 'Noto Sans TC', size: 10 }, color: '#94a3b8', maxTicksLimit: 6 } },
+                            x: { 
+                                grid: { display: false }, 
+                                ticks: { 
+                                    font: { family: 'Noto Sans TC', size: 10 }, 
+                                    color: '#94a3b8', 
+                                    maxTicksLimit: 8, // 讓系統自動跳著顯示避免太擁擠，但保留文字
+                                    maxRotation: 45,  // 傾斜 45 度避免文字重疊
+                                    minRotation: 45
+                                } 
+                            },
                             y: { border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Noto Sans TC', size: 10 }, color: '#94a3b8', callback: function(value) { return (value / 10000) + ' 萬'; } } }
                         }
                     }
@@ -923,7 +943,7 @@
             const rawRate = document.getElementById('input-rate').value;
             const y = document.getElementById('input-years').value;
             const r = rawRate / 100 / 12;
-            const n = y * 12;
+            const n = y * 12; // 計算總月數
             
             document.getElementById('val-rate').innerText = rawRate + '%';
             document.getElementById('val-years').innerText = y + '年';
@@ -937,24 +957,38 @@
             document.getElementById('res-monthly').innerText = formatCurrency(monthlyGrowth);
 
             const msgEl = document.getElementById('goal-milestone-msg');
-            let hitYear = -1;
+            let hitMonthTotal = -1;
             
-            for (let i = 1; i <= y; i++) {
-                let check_months = i * 12;
-                let check_val = appData.principal * Math.pow(1 + r, check_months) + appData.monthly * ((Math.pow(1 + r, check_months) - 1) / r);
-                if (check_val >= appData.goal) {
-                    hitYear = i;
-                    break;
-                }
-            }
-
-            if (hitYear !== -1) {
-                msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-orange-50 text-orange-600 border border-orange-200 shadow-sm transition-all duration-500";
-                msgEl.innerHTML = `✨ 預計於第 ${hitYear} 年達陣千萬目標 ✨`;
+            if (appData.principal >= appData.goal) {
+                msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm transition-all duration-500";
+                msgEl.innerHTML = `✨ 恭喜！您已達陣千萬資產目標 ✨`;
             } else {
-                let diff = appData.goal - total;
-                msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-slate-50 text-slate-500 border border-slate-200 transition-all duration-500";
-                msgEl.innerHTML = `距離千萬目標仍需 $${formatCurrency(diff).replace('$', '')}`;
+                // 將檢查細化到「每月」掃描
+                for (let m = 1; m <= n; m++) {
+                    let check_val = appData.principal * Math.pow(1 + r, m) + appData.monthly * ((Math.pow(1 + r, m) - 1) / r);
+                    if (check_val >= appData.goal) {
+                        hitMonthTotal = m;
+                        break;
+                    }
+                }
+
+                if (hitMonthTotal !== -1) {
+                    let hitY = Math.floor(hitMonthTotal / 12);
+                    let hitM = hitMonthTotal % 12;
+                    
+                    let timeStr = "";
+                    if (hitY > 0) timeStr += `${hitY} 年`;
+                    if (hitY > 0 && hitM > 0) timeStr += `又 `;
+                    if (hitM > 0) timeStr += `${hitM} 個月`;
+                    if (hitY === 0 && hitM === 0) timeStr = "1 個月內";
+
+                    msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-orange-50 text-orange-600 border border-orange-200 shadow-sm transition-all duration-500";
+                    msgEl.innerHTML = `✨ 預計於第 ${timeStr} 達陣千萬目標 ✨`;
+                } else {
+                    let diff = appData.goal - total;
+                    msgEl.className = "mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest bg-slate-50 text-slate-500 border border-slate-200 transition-all duration-500";
+                    msgEl.innerHTML = `距離千萬目標仍需 $${formatCurrency(diff).replace('$', '')}`;
+                }
             }
 
             updateRegionProjection(parseInt(y), parseFloat(rawRate));
