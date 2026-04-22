@@ -299,28 +299,28 @@
 
     <script>
         // --- 資料狀態管理 (支援 LocalStorage) ---
-        // 根據截圖更新了全部最新股數與市價總值，設定 v16 key 確保載入最新資料
+        // 根據截圖更新了全部最新股數與市價總值，設定 v17 key 確保載入最新資料
         const defaultData = {
-            principal: 5350160, // 更新後的總和
+            principal: 5702814, // 更新後的總和
             monthly: 60000,
             goal: 10000000,
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv', // 固定預設網址
             holdings: [
-                { id: '2330', name: '台積電', shares: 1000, value: 2050000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
-                { id: '0050', name: '元大台灣50', shares: 14000, value: 1204000, color: '#f87171', divPerShare: 0, yield: 2.5 },
-                { id: '0052', name: '富邦科技', shares: 19000, value: 948860, color: '#dc2626', divPerShare: 1.199, yield: 0 },
-                { id: '00631L', name: '台灣50正2', shares: 6000, value: 161280, color: '#b91c1c', divPerShare: 0, yield: 0 },
-                { id: '00757', name: '統一FANG+', shares: 3000, value: 353550, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
-                { id: '00646', name: '元大S&P500', shares: 1944, value: 136760, color: '#2563eb', divPerShare: 0, yield: 0 },
-                { id: '00662', name: '富邦NASDAQ', shares: 425, value: 45858, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
-                { id: '00955', name: '中信日本商社', shares: 20568, value: 313868, color: '#f97316', divPerShare: 0, yield: 0 }, 
-                { id: '009805', name: '新光美國電力', shares: 6000, value: 96120, color: '#eab308', divPerShare: 0, yield: 0 }, 
-                { id: '00981A', name: '統一台股增長', shares: 1510, value: 39864, color: '#10b981', divPerShare: 0, yield: 0 }
+                { id: '2330', name: '台積電', shares: 1000, value: 2060000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
+                { id: '0050', name: '元大台灣50', shares: 14000, value: 1211700, color: '#f87171', divPerShare: 0, yield: 2.5 },
+                { id: '0052', name: '富邦科技', shares: 19000, value: 953800, color: '#dc2626', divPerShare: 1.199, yield: 0 },
+                { id: '00631L', name: '台灣50正2', shares: 6000, value: 162840, color: '#b91c1c', divPerShare: 0, yield: 0 },
+                { id: '00757', name: '統一FANG+', shares: 3000, value: 353700, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
+                { id: '00646', name: '元大S&P500', shares: 2944, value: 206816, color: '#2563eb', divPerShare: 0, yield: 0 },
+                { id: '00662', name: '富邦NASDAQ', shares: 1426, value: 153865, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
+                { id: '00955', name: '中信日本商社', shares: 24568, value: 367292, color: '#f97316', divPerShare: 0, yield: 0 }, 
+                { id: '009805', name: '新光美國電力', shares: 12000, value: 191880, color: '#eab308', divPerShare: 0, yield: 0 }, 
+                { id: '00981A', name: '統一台股增長', shares: 1510, value: 40921, color: '#10b981', divPerShare: 0, yield: 0 }
             ]
         };
 
-        // 從 localStorage 讀取或使用預設資料 (改用 v16 以強制刷新最新資料)
-        let appData = JSON.parse(localStorage.getItem('investment_60_data_v16')) || JSON.parse(JSON.stringify(defaultData));
+        // 從 localStorage 讀取或使用預設資料 (改用 v17 以強制刷新最新資料)
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v17')) || JSON.parse(JSON.stringify(defaultData));
 
         // 永遠強制檢查並帶入固定的試算表網址，防止被清空
         if (!appData.sheetUrl || appData.sheetUrl.trim() === '') {
@@ -496,7 +496,7 @@
                 if (updatedCount > 0) {
                     appData.principal = newPrincipal;
                     // 使用相同的 key 保存
-                    localStorage.setItem('investment_60_data_v16', JSON.stringify(appData));
+                    localStorage.setItem('investment_60_data_v17', JSON.stringify(appData));
                     refreshDashboard();
                     // 加入提示：Google 表單發佈本身有 5 分鐘快取延遲
                     showToast(`✅ 成功同步 ${updatedCount} 檔最新報價！(Google發佈約有3分鐘延遲)`);
@@ -1087,8 +1087,8 @@
             // 儲存時自動以各持股總和更新總資產
             appData.principal = newPrincipal;
 
-            // 存入 LocalStorage (同步更新儲存版本至 v16)
-            localStorage.setItem('investment_60_data_v16', JSON.stringify(appData));
+            // 存入 LocalStorage (同步更新儲存版本至 v17)
+            localStorage.setItem('investment_60_data_v17', JSON.stringify(appData));
 
             // 更新畫面
             closeEditModal();
