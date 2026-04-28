@@ -114,6 +114,19 @@
                 </div>
                 <div id="holdings-list" class="space-y-4"></div>
             </section>
+
+            <!-- 🛡️ 真實台積電部位解析 -->
+            <section class="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-[2.5rem] shadow-lg border border-slate-700 overflow-hidden relative">
+                <div class="absolute -right-2 -top-4 text-[100px] opacity-10">🛡️</div>
+                <div class="flex justify-between items-center mb-5 relative z-10">
+                    <h3 class="text-base font-black text-white flex items-center">
+                        <span class="w-1.5 h-6 bg-red-500 rounded-full mr-3 shadow-lg shadow-red-500/50"></span>
+                        真實台積電部位解析
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest border border-slate-600 px-2 py-0.5 rounded-full">TSMC Exposure</span>
+                </div>
+                <div id="tsmc-exposure-content" class="relative z-10"></div>
+            </section>
         </div>
 
         <!-- Tab 2: Plan (定期計畫) -->
@@ -299,9 +312,10 @@
 
     <script>
         // --- 資料狀態管理 (支援 LocalStorage) ---
+        // 確保為純粹的 6.0 計畫，保留最新的 7.54M 市值與剛寫入的超強台積電曝光功能，強制以 v24 覆蓋
         const defaultData = {
-            principal: 7543271, // 保持最新總值
-            monthly: 60000,     // 復原為 6.0 計畫的 60,000
+            principal: 7543271, 
+            monthly: 60000,     
             goal: 10000000,
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv',
             holdings: [
@@ -318,8 +332,7 @@
             ]
         };
 
-        // 從 localStorage 讀取或使用預設資料 (強制以 v23 覆寫快取)
-        let appData = JSON.parse(localStorage.getItem('investment_60_data_v23')) || JSON.parse(JSON.stringify(defaultData));
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v24')) || JSON.parse(JSON.stringify(defaultData));
 
         if (!appData.sheetUrl || appData.sheetUrl.trim() === '') {
             appData.sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv';
@@ -350,7 +363,7 @@
 
         let growthChartInstance = null;
 
-        // 復原為 6.0 每月定額戰略計畫
+        // 6.0 每月定額戰略計畫
         const sipPlan = [
             { id: '00646', name: '元大 S&P 500', type: '美股大盤', amount: 20000, dates: '8, 18 號', color: '#2563eb' },
             { id: '00662', name: '富邦 NASDAQ', type: '美股科技', amount: 12000, dates: '8, 28 號', color: '#8b5cf6' },
@@ -359,14 +372,14 @@
             { id: '00981A', name: '統一台股增長', type: '台股動能', amount: 4000, dates: '10, 20 號', color: '#10b981' }
         ];
 
-        // 復原為 6.0 區域映射規則
+        // 6.0 區域映射規則
         const regionMapping = [
             { key: 'TW', name: '台股版圖', color: '#ef4444', ids: ['2330', '0050', '0052', '00631L', '00981A'] },
             { key: 'US', name: '美股版圖', color: '#3b82f6', ids: ['00757', '00646', '00662', '009805'] },
             { key: 'JP', name: '日股版圖', color: '#f97316', ids: ['00955', '00645'] }
         ];
 
-        // 復原為 6.0 扣款行程
+        // 6.0 扣款行程
         const schedule = [
             { date: '06', label: '新光美國電力 + 中信日本商社', code: '009805 + 00955', amount: 10000 },
             { date: '08', label: '元大 S&P 500 + 富邦 NASDAQ', code: '00646 + 00662', amount: 16000 },
@@ -481,7 +494,7 @@
 
                 if (updatedCount > 0) {
                     appData.principal = newPrincipal;
-                    localStorage.setItem('investment_60_data_v23', JSON.stringify(appData));
+                    localStorage.setItem('investment_60_data_v24', JSON.stringify(appData));
                     refreshDashboard();
                     showToast(`✅ 成功同步 ${updatedCount} 檔最新報價！(Google發佈約有3分鐘延遲)`);
                 } else {
@@ -577,6 +590,89 @@
             });
         }
 
+        // --- 全新加入：台積電真實部位解析器 (補回) ---
+        function initTSMCExposure() {
+            const tsmc = appData.holdings.find(h => h.id === '2330') || {value: 0, shares: 0};
+            const tsmcPrice = tsmc.shares > 0 ? (tsmc.value / tsmc.shares) : 0;
+
+            const h0050 = appData.holdings.find(h => h.id === '0050') || {value: 0};
+            const h0052 = appData.holdings.find(h => h.id === '0052') || {value: 0};
+            const h00981A = appData.holdings.find(h => h.id === '00981A') || {value: 0};
+            const h00631L = appData.holdings.find(h => h.id === '00631L') || {value: 0};
+
+            const valDirect = tsmc.value;
+            const val0050 = h0050.value * 0.628;
+            const val0052 = h0052.value * 0.6948;
+            const val00981A = h00981A.value * 0.0946;
+            // 00631L 為 0050 兩倍槓桿，等效台積電曝險約為 62.8% * 2 = 125.6%
+            const val00631L = h00631L.value * 1.256; 
+
+            const totalTsmcValue = valDirect + val0050 + val0052 + val00981A + val00631L;
+            // 計算等效總股數 (總含積市值 / 目前台積電股價)
+            const totalTsmcShares = tsmcPrice > 0 ? (totalTsmcValue / tsmcPrice) : 0;
+            const pctOfPortfolio = appData.principal > 0 ? (totalTsmcValue / appData.principal) * 100 : 0;
+
+            const pctDirect = totalTsmcValue > 0 ? (valDirect / totalTsmcValue) * 100 : 0;
+            const pct0050 = totalTsmcValue > 0 ? (val0050 / totalTsmcValue) * 100 : 0;
+            const pct0052 = totalTsmcValue > 0 ? (val0052 / totalTsmcValue) * 100 : 0;
+            const pct00981A = totalTsmcValue > 0 ? (val00981A / totalTsmcValue) * 100 : 0;
+            const pct00631L = totalTsmcValue > 0 ? (val00631L / totalTsmcValue) * 100 : 0;
+
+            const container = document.getElementById('tsmc-exposure-content');
+            if(!container) return;
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 mb-5">
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">等效總股數</div>
+                        <div class="text-2xl font-mono font-black text-white">${totalTsmcShares.toLocaleString('en-US', {maximumFractionDigits: 0})} <span class="text-sm text-slate-500 font-bold">股</span></div>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">含積總市值</div>
+                        <div class="text-2xl font-mono font-black text-red-400">${formatCurrency(totalTsmcValue)}</div>
+                    </div>
+                </div>
+
+                <div class="mb-2 flex justify-between items-end">
+                    <span class="text-xs font-black text-slate-400">總體部位佔比</span>
+                    <span class="text-sm font-black text-white">${pctOfPortfolio.toFixed(1)}% <span class="text-[10px] text-slate-500 font-normal">/ 總資產</span></span>
+                </div>
+
+                <!-- 貢獻比例條 -->
+                <div class="flex h-3 w-full rounded-full overflow-hidden shadow-inner bg-slate-800 mb-5">
+                    <div style="width: ${pctDirect}%" class="bg-red-500 h-full"></div>
+                    <div style="width: ${pct0052}%" class="bg-rose-400 h-full border-l border-slate-900"></div>
+                    <div style="width: ${pct0050}%" class="bg-orange-400 h-full border-l border-slate-900"></div>
+                    <div style="width: ${pct00631L}%" class="bg-red-700 h-full border-l border-slate-900"></div>
+                    <div style="width: ${pct00981A}%" class="bg-emerald-500 h-full border-l border-slate-900"></div>
+                </div>
+
+                <!-- 詳細來源分析 -->
+                <div class="grid grid-cols-2 gap-y-3 text-xs font-bold text-slate-400">
+                    <div class="flex flex-col pr-4">
+                        <div class="flex items-center mb-1"><span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>2330 直接持有</div>
+                        <span class="font-mono text-white text-sm ml-4">${formatCurrency(valDirect)}</span>
+                    </div>
+                    <div class="flex flex-col pl-4 border-l border-slate-700">
+                        <div class="flex items-center mb-1"><span class="w-2 h-2 rounded-full bg-rose-400 mr-2"></span>0052 <span class="ml-1 opacity-60 text-[10px]">(含 69.4%)</span></div>
+                        <span class="font-mono text-white text-sm ml-4">${formatCurrency(val0052)}</span>
+                    </div>
+                    <div class="flex flex-col pr-4">
+                        <div class="flex items-center mb-1"><span class="w-2 h-2 rounded-full bg-orange-400 mr-2"></span>0050 <span class="ml-1 opacity-60 text-[10px]">(含 62.8%)</span></div>
+                        <span class="font-mono text-white text-sm ml-4">${formatCurrency(val0050)}</span>
+                    </div>
+                    <div class="flex flex-col pl-4 border-l border-slate-700">
+                        <div class="flex items-center mb-1"><span class="w-2 h-2 rounded-full bg-red-700 mr-2"></span>00631L <span class="ml-1 opacity-60 text-[10px]">(約 125.6%)</span></div>
+                        <span class="font-mono text-white text-sm ml-4">${formatCurrency(val00631L)}</span>
+                    </div>
+                    <div class="flex flex-col pr-4">
+                        <div class="flex items-center mb-1"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>00981A <span class="ml-1 opacity-60 text-[10px]">(含 9.4%)</span></div>
+                        <span class="font-mono text-white text-sm ml-4">${formatCurrency(val00981A)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
         function initDiagnosis() {
             const bar = document.getElementById('asset-bar');
             const legend = document.getElementById('asset-legend');
@@ -584,14 +680,12 @@
             
             const getCatSum = (ids) => appData.holdings.filter(h => ids.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
 
-            // 動態產生區域計算
             const categories = regionMapping.map(rm => ({
                 name: rm.name,
                 val: getCatSum(rm.ids),
                 col: rm.color
             }));
 
-            // 添加特殊標的如果沒有被分到三大版圖中
             const mappedIds = regionMapping.flatMap(rm => rm.ids);
             const otherVal = appData.holdings.filter(h => !mappedIds.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
             if(otherVal > 0) {
@@ -618,7 +712,6 @@
                 legend.appendChild(item);
             });
 
-            // 依據總金額 (市值) 由高到低排序，略過 0 元未開始的標的
             appData.holdings.sort((a,b) => b.value - a.value).filter(h => h.value > 0 || h.shares > 0).forEach(h => {
                 const currentPrice = h.shares > 0 ? (h.value / h.shares).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                 
@@ -647,6 +740,9 @@
             });
             
             document.getElementById('holdings-summary').innerText = (appData.principal / 1000000).toFixed(2) + 'M Assets';
+            
+            // 啟動真實台積電計算器
+            initTSMCExposure();
         }
 
         function getDividendIconAndFreq(id, name) {
@@ -1090,7 +1186,7 @@
             
             appData.principal = newPrincipal;
 
-            localStorage.setItem('investment_60_data_v23', JSON.stringify(appData));
+            localStorage.setItem('investment_60_data_v24', JSON.stringify(appData));
 
             closeEditModal();
             refreshDashboard();
