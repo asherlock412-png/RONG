@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>6.0 投資計畫控台 (極致清晰版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 新增 Chart.js 用於繪製成長曲線 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
@@ -38,24 +39,29 @@
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 text-slate-900 relative">
 
+    <!-- 自訂懸浮提示框 (Toast) -->
     <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300 z-[200]">
         通知訊息
     </div>
 
     <div id="app" class="max-w-xl mx-auto">
+        <!-- Header: 保持深色增加層次感 -->
         <div class="bg-slate-900 p-6 text-white sticky top-0 z-50 shadow-xl">
             <div class="flex justify-between items-center">
                 <h1 class="text-3xl font-black italic tracking-tighter text-blue-400">6.0 PLAN</h1>
                 <div class="text-xs bg-blue-600/30 border border-blue-500/50 px-2 py-0.5 rounded text-blue-200 font-bold uppercase tracking-widest">Enhanced Clarity</div>
             </div>
             
+            <!-- 加入編輯與同步按鈕的區塊 -->
             <div class="flex justify-between items-center mt-3">
                 <p id="total-value" class="text-slate-400 text-base font-bold font-mono tracking-wide">載入中...</p>
                 <div class="flex gap-2">
+                    <!-- 同步最新報價按鈕 -->
                     <button onclick="syncPrices()" id="sync-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         抓取報價
                     </button>
+                    <!-- 編輯數據按鈕 -->
                     <button onclick="openEditModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         編輯
@@ -63,6 +69,7 @@
                 </div>
             </div>
             
+            <!-- 千萬目標進度追蹤器 -->
             <div class="mt-4 bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-inner">
                 <div class="flex justify-between items-end mb-2">
                     <div class="flex items-center">
@@ -80,6 +87,7 @@
                 </div>
             </div>
 
+            <!-- Navigation Tabs -->
             <div class="flex mt-6 bg-white/10 p-1 rounded-xl text-sm font-bold backdrop-blur-md overflow-x-auto no-scrollbar gap-1">
                 <button onclick="switchTab('diagnosis')" id="btn-diagnosis" class="flex-none px-4 py-2.5 rounded-lg transition-all tab-active">配置分析</button>
                 <button onclick="switchTab('plan')" id="btn-plan" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">定期計畫</button>
@@ -88,6 +96,7 @@
             </div>
         </div>
 
+        <!-- Tab 1: Diagnosis (配置分析) -->
         <div id="tab-diagnosis" class="p-4 space-y-6 animate-in fade-in duration-500">
             <section class="bg-white p-6 rounded-3xl shadow-md border border-slate-100">
                 <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 text-center">目前資產比例分佈</h3>
@@ -107,6 +116,7 @@
             </section>
         </div>
 
+        <!-- Tab 2: Plan (定期計畫) -->
         <div id="tab-plan" class="hidden p-4 space-y-6 animate-in fade-in duration-500">
             <div>
                 <div class="flex justify-between items-end px-1 mb-2">
@@ -120,6 +130,7 @@
                     </div>
                 </div>
 
+                <!-- 計畫比例條 -->
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-4">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs font-black text-slate-500">單月配置比例</span>
@@ -127,9 +138,11 @@
                     <div id="plan-bar" class="flex h-4 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                 </div>
 
+                <!-- 計畫列表 -->
                 <div id="plan-list" class="space-y-3"></div>
             </div>
 
+            <!-- 下半部：執行進度 -->
             <div class="pt-4 border-t-2 border-slate-100 border-dashed">
                 <div class="flex justify-between items-end px-1 mb-4">
                     <div>
@@ -142,8 +155,10 @@
             </div>
         </div>
 
+        <!-- Tab 4: Dividend (配息資訊) -->
         <div id="tab-dividend" class="hidden p-4 space-y-5 animate-in fade-in duration-500">
             
+            <!-- 頂部總結白皮大卡片 -->
             <div class="bg-white p-8 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(244,63,94,0.12)] flex flex-col items-center mt-2 relative overflow-hidden border border-rose-50/50">
                 <div class="flex items-center gap-2 mb-3">
                     <div class="text-[11px] font-black text-slate-400 uppercase tracking-widest">預估年度總配息</div>
@@ -157,9 +172,11 @@
                 </div>
             </div>
 
+            <!-- 配息標的列表 -->
             <div id="dividend-list" class="space-y-3.5 mt-6"></div>
         </div>
 
+        <!-- Tab 5: Calculator (財富願景) -->
         <div id="tab-calculator" class="hidden p-4 space-y-6 animate-in fade-in duration-500">
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-md space-y-8">
                 <div>
@@ -178,12 +195,14 @@
                 </div>
             </div>
 
+            <!-- 預估圖卡 -->
             <div class="bg-white rounded-[3rem] p-10 pb-12 text-center shadow-xl relative overflow-hidden border-2 border-blue-50">
                 <div class="absolute -top-10 -right-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
                 <div class="relative z-10">
                     <div class="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-4">預估資產總額展望</div>
                     <div id="res-total" class="text-4xl sm:text-5xl font-black mb-2 text-slate-900 tracking-tighter break-words">---</div>
                     
+                    <!-- 達陣千萬目標動態徽章 -->
                     <div id="goal-milestone-msg" class="mt-4 mb-8 inline-block px-4 py-2 rounded-full text-[11px] font-black tracking-widest transition-all duration-500 shadow-sm border">
                         計算中...
                     </div>
@@ -201,6 +220,7 @@
                 </div>
             </div>
 
+            <!-- 全球版圖動態推演區塊 -->
             <div class="bg-white p-6 sm:p-8 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-sm font-black text-slate-500 flex items-center">
@@ -213,6 +233,7 @@
                 </div>
 
                 <div class="space-y-6">
+                    <!-- 現有版圖 -->
                     <div>
                         <div class="flex justify-between text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
                             <span>現有庫存真實比重</span>
@@ -220,6 +241,7 @@
                         <div id="current-region-bar" class="flex h-2.5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                     </div>
                     
+                    <!-- 預估版圖 -->
                     <div>
                         <div class="flex justify-between text-xs font-black text-blue-500 mb-2 uppercase tracking-widest">
                             <span>計畫執行後修正比重</span>
@@ -228,15 +250,18 @@
                     </div>
                 </div>
 
+                <!-- 圖例與數據 -->
                 <div id="region-legend" class="grid grid-cols-3 gap-x-2 gap-y-4 mt-8 pt-6 border-t border-slate-50"></div>
             </div>
             
+            <!-- 動態資產成長曲線圖 -->
             <div class="bg-white p-6 sm:p-8 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
                 <h3 class="text-sm font-black text-slate-500 mb-5 flex items-center">
                     <span class="w-1.5 h-4 bg-blue-600 rounded-full mr-2 shadow-lg shadow-blue-200"></span>
                     時間複利成長軌跡
                 </h3>
                 
+                <!-- 複利名言 -->
                 <div class="mb-6 pl-3.5 border-l-[3px] border-blue-400/60 bg-blue-50/30 py-1.5 rounded-r-lg">
                     <p class="text-xs font-bold text-slate-600 italic tracking-wide leading-relaxed">
                         「複利是世界第八大奇蹟。」
@@ -253,6 +278,7 @@
         </div>
     </div>
 
+    <!-- 編輯數據 Modal (預設隱藏) -->
     <div id="edit-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center transition-opacity duration-300">
         <div class="bg-white w-full sm:w-[500px] max-h-[90vh] rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
@@ -263,7 +289,8 @@
                 <button onclick="closeEditModal()" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold transition-colors">✕</button>
             </div>
             <div class="p-5 overflow-y-auto flex-1 custom-scroll space-y-5" id="edit-form-container">
-                </div>
+                <!-- Inputs injected by JS -->
+            </div>
             <div class="p-5 border-t border-slate-100 bg-white sm:rounded-b-3xl">
                 <button onclick="saveData()" class="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all text-base tracking-widest">儲存並更新儀表板</button>
             </div>
@@ -272,27 +299,27 @@
 
     <script>
         // --- 資料狀態管理 (支援 LocalStorage) ---
-        // 復原回 6.0 計畫，但完整保留突破 7.22M 的最新持股數據，強制以 v21 覆蓋
         const defaultData = {
-            principal: 7222919, // 保持最新總和 7.22M
-            monthly: 60000,     // 復原為 6.0 計畫的 6 萬
+            principal: 7543271, // 保持最新總值
+            monthly: 60000,     // 復原為 6.0 計畫的 60,000
             goal: 10000000,
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv',
             holdings: [
-                { id: '2330', name: '台積電', shares: 1000, value: 2265000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
-                { id: '0050', name: '元大台灣50', shares: 14000, value: 1302000, color: '#f87171', divPerShare: 0, yield: 2.5 },
-                { id: '0052', name: '富邦科技', shares: 20000, value: 1097000, color: '#dc2626', divPerShare: 1.199, yield: 0 },
-                { id: '00631L', name: '台灣50正2', shares: 10000, value: 296200, color: '#b91c1c', divPerShare: 0, yield: 0 },
-                { id: '00757', name: '統一FANG+', shares: 7000, value: 841400, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
-                { id: '00646', name: '元大S&P500', shares: 4944, value: 348552, color: '#2563eb', divPerShare: 0, yield: 0 },
-                { id: '00662', name: '富邦NASDAQ', shares: 2426, value: 267952, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
-                { id: '00955', name: '中信日本商社', shares: 30568, value: 456686, color: '#f97316', divPerShare: 0, yield: 0 }, 
-                { id: '009805', name: '新光美國電力', shares: 15000, value: 250200, color: '#eab308', divPerShare: 0, yield: 0 }, 
-                { id: '00981A', name: '統一台股增長', shares: 3510, value: 97929, color: '#10b981', divPerShare: 0, yield: 0 }
+                { id: '2330', name: '台積電', shares: 1000, value: 2215000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
+                { id: '0050', name: '元大台灣50', shares: 15000, value: 1380000, color: '#f87171', divPerShare: 0, yield: 2.5 },
+                { id: '0052', name: '富邦科技', shares: 24000, value: 1291200, color: '#dc2626', divPerShare: 1.199, yield: 0 },
+                { id: '00631L', name: '台灣50正2', shares: 10000, value: 292700, color: '#b91c1c', divPerShare: 0, yield: 0 },
+                { id: '00757', name: '統一FANG+', shares: 7000, value: 850500, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
+                { id: '00646', name: '元大S&P500', shares: 5944, value: 422321, color: '#2563eb', divPerShare: 0, yield: 0 },
+                { id: '00662', name: '富邦NASDAQ', shares: 2426, value: 267588, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
+                { id: '00955', name: '中信日本商社', shares: 30832, value: 471730, color: '#ea580c', divPerShare: 0, yield: 0 }, 
+                { id: '009805', name: '新光美國電力', shares: 15357, value: 254619, color: '#eab308', divPerShare: 0, yield: 0 }, 
+                { id: '00981A', name: '統一台股增長', shares: 3510, value: 97613, color: '#10b981', divPerShare: 0, yield: 0 }
             ]
         };
 
-        let appData = JSON.parse(localStorage.getItem('investment_60_data_v21')) || JSON.parse(JSON.stringify(defaultData));
+        // 從 localStorage 讀取或使用預設資料 (強制以 v23 覆寫快取)
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v23')) || JSON.parse(JSON.stringify(defaultData));
 
         if (!appData.sheetUrl || appData.sheetUrl.trim() === '') {
             appData.sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv';
@@ -454,7 +481,7 @@
 
                 if (updatedCount > 0) {
                     appData.principal = newPrincipal;
-                    localStorage.setItem('investment_60_data_v21', JSON.stringify(appData));
+                    localStorage.setItem('investment_60_data_v23', JSON.stringify(appData));
                     refreshDashboard();
                     showToast(`✅ 成功同步 ${updatedCount} 檔最新報價！(Google發佈約有3分鐘延遲)`);
                 } else {
@@ -557,12 +584,14 @@
             
             const getCatSum = (ids) => appData.holdings.filter(h => ids.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
 
+            // 動態產生區域計算
             const categories = regionMapping.map(rm => ({
                 name: rm.name,
                 val: getCatSum(rm.ids),
                 col: rm.color
             }));
 
+            // 添加特殊標的如果沒有被分到三大版圖中
             const mappedIds = regionMapping.flatMap(rm => rm.ids);
             const otherVal = appData.holdings.filter(h => !mappedIds.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
             if(otherVal > 0) {
@@ -589,6 +618,7 @@
                 legend.appendChild(item);
             });
 
+            // 依據總金額 (市值) 由高到低排序，略過 0 元未開始的標的
             appData.holdings.sort((a,b) => b.value - a.value).filter(h => h.value > 0 || h.shares > 0).forEach(h => {
                 const currentPrice = h.shares > 0 ? (h.value / h.shares).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
                 
@@ -629,7 +659,11 @@
                 '00662': { icon: '🚀', freq: '每年' },
                 '00955': { icon: '🌸', freq: '每季' },
                 '009805': { icon: '⚡', freq: '每季' },
-                '00981A': { icon: '📈', freq: '每年' }
+                '00981A': { icon: '📈', freq: '每年' },
+                '006208': { icon: '🇹🇼', freq: '半年' },
+                '009811': { icon: '🦅', freq: '每年' },
+                '00645': { icon: '🌸', freq: '每年' },
+                '00965': { icon: '🚀', freq: '每年' }
             };
             if(data[id]) return data[id];
             if (name.includes('債')) return { icon: '🔥', freq: '每月' };
@@ -1056,7 +1090,7 @@
             
             appData.principal = newPrincipal;
 
-            localStorage.setItem('investment_60_data_v21', JSON.stringify(appData));
+            localStorage.setItem('investment_60_data_v23', JSON.stringify(appData));
 
             closeEditModal();
             refreshDashboard();
