@@ -110,7 +110,12 @@
                         <span class="w-1.5 h-6 bg-blue-600 rounded-full mr-3 shadow-lg shadow-blue-200"></span>
                         持有資產細節
                     </h3>
-                    <span id="holdings-summary" class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Assets</span>
+                    <div class="flex items-center gap-3">
+                        <button onclick="runAIDiagnosis()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded-full text-xs font-black tracking-widest shadow-lg shadow-purple-500/30 flex items-center transition-all active:scale-95">
+                            ✨ AI 健檢
+                        </button>
+                        <span id="holdings-summary" class="text-[11px] text-slate-400 font-bold uppercase tracking-widest hidden sm:inline">Assets</span>
+                    </div>
                 </div>
                 <div id="holdings-list" class="space-y-4"></div>
             </section>
@@ -287,6 +292,28 @@
                 <div class="relative h-[250px] w-full">
                     <canvas id="growthChart"></canvas>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨ AI 健檢 Modal -->
+    <div id="ai-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 p-4">
+        <div class="bg-white w-full sm:w-[600px] max-h-[85vh] rounded-[2rem] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-slate-200">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50">
+                <h2 class="text-lg font-black text-indigo-900 flex items-center">
+                    <span class="text-2xl mr-2">✨</span> 投資組合 AI 專業解析
+                </h2>
+                <button onclick="closeAIModal()" class="w-8 h-8 bg-white hover:bg-slate-100 text-indigo-900 rounded-full flex items-center justify-center font-bold transition-colors shadow-sm">✕</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 custom-scroll bg-white relative" id="ai-content-container">
+                <div id="ai-loading" class="flex flex-col items-center justify-center py-12">
+                    <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                    <p class="text-sm font-bold text-slate-500 animate-pulse tracking-widest">Gemini 正在深度運算您的資產模型...</p>
+                </div>
+                <div id="ai-response" class="hidden space-y-4 text-[15px] text-slate-700 leading-relaxed font-medium"></div>
+            </div>
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 text-right">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Powered by Gemini 2.5 Flash API</p>
             </div>
         </div>
     </div>
@@ -1212,6 +1239,96 @@
             initDiagnosis();
             initDividend(); 
             calculate();
+        }
+
+        // --- ✨ Gemini API AI 投資顧問邏輯 ---
+        const apiKey = ""; // 系統環境將自動帶入 API Key
+
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            let delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+
+        async function runAIDiagnosis() {
+            document.getElementById('ai-modal').classList.remove('hidden');
+            document.getElementById('ai-loading').classList.remove('hidden');
+            document.getElementById('ai-response').classList.add('hidden');
+            document.getElementById('ai-response').innerHTML = '';
+
+            // 抓取目前的配置組成
+            const holdingsList = appData.holdings
+                .filter(h => h.value > 0)
+                .map(h => `- ${h.name} (${h.id}): 市值 $${h.value.toLocaleString()} (佔 ${((h.value/appData.principal)*100).toFixed(1)}%)`)
+                .join('\n');
+            
+            const prompt = `您是一位專業、具備全球總經視野的頂級理財顧問。請根據以下使用者的投資組合資料，進行簡短但直擊要害的「資產配置健檢」。
+
+【目前資產狀況】
+總資產: $${appData.principal.toLocaleString()}
+每月定期投入: $${appData.monthly.toLocaleString()}
+長期目標金額: $${appData.goal.toLocaleString()}
+
+【持有標的明細】
+${holdingsList}
+
+請提供以下三點回覆：
+1. 【整體配置評價】：以客觀角度點評其股票版圖 (如: 台股/美股/日股的分佈狀況)，與集中度評估。
+2. 【優化與風險提醒】：提供 2 到 3 個具體的優化建議 (包含是否有過度集中於特定產業如半導體的風險，或是槓桿型ETF的注意事項)。
+3. 【邁向千萬】：根據目前的月供與總資產，給予一句溫暖且充滿能量的達陣鼓勵。
+
+格式要求：
+請使用繁體中文。請使用簡單的 HTML 標籤排版 (例如 <b>, <ul>, <li>, <br>, <p>) 讓閱讀體驗美觀。嚴禁使用 Markdown (如 ** 等符號)。`;
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    tools: [{ google_search: {} }], // 啟用 Google 搜尋 Grounding 以獲取最新市場動態
+                    systemInstruction: { parts: [{ text: "You are an AI financial advisor. Always format your output in clean HTML without markdown backticks." }] }
+                };
+
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "<p>抱歉，AI 暫時無法分析，請稍後再試。</p>";
+                
+                // 過濾掉可能多餘的 ```html 標籤
+                text = text.replace(/```html/g, '').replace(/```/g, '');
+
+                document.getElementById('ai-loading').classList.add('hidden');
+                document.getElementById('ai-response').innerHTML = text;
+                document.getElementById('ai-response').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                document.getElementById('ai-loading').classList.add('hidden');
+                document.getElementById('ai-response').innerHTML = `
+                    <div class="text-rose-500 font-bold p-4 bg-rose-50 rounded-xl border border-rose-200 flex items-center">
+                        <span class="mr-2">❌</span> AI 分析服務連線異常
+                    </div>
+                    <div class="text-xs text-slate-400 mt-2 pl-2 border-l-2 border-slate-200">${error.message}</div>
+                `;
+                document.getElementById('ai-response').classList.remove('hidden');
+            }
+        }
+
+        function closeAIModal() {
+            document.getElementById('ai-modal').classList.add('hidden');
         }
 
         window.onload = () => {
