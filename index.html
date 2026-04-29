@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>6.0 投資計畫控台 (極致清晰版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 新增 Chart.js 用於繪製成長曲線 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
@@ -18,7 +17,6 @@
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* Tracker 質感打勾動畫特效 */
         .task-item { transition: all 0.3s ease; }
         .task-item.is-done { background: #f8fafc; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.03); border-color: #e2e8f0; }
         .task-item .date-circle { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -45,23 +43,20 @@
     </div>
 
     <div id="app" class="max-w-xl mx-auto">
-        <!-- Header: 保持深色增加層次感 -->
+        <!-- Header -->
         <div class="bg-slate-900 p-6 text-white sticky top-0 z-50 shadow-xl">
             <div class="flex justify-between items-center">
                 <h1 class="text-3xl font-black italic tracking-tighter text-blue-400">6.0 PLAN</h1>
                 <div class="text-xs bg-blue-600/30 border border-blue-500/50 px-2 py-0.5 rounded text-blue-200 font-bold uppercase tracking-widest">Enhanced Clarity</div>
             </div>
             
-            <!-- 加入編輯與同步按鈕的區塊 -->
             <div class="flex justify-between items-center mt-3">
                 <p id="total-value" class="text-slate-400 text-base font-bold font-mono tracking-wide">載入中...</p>
                 <div class="flex gap-2">
-                    <!-- 同步最新報價按鈕 -->
                     <button onclick="syncPrices()" id="sync-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         抓取報價
                     </button>
-                    <!-- 編輯數據按鈕 -->
                     <button onclick="openEditModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         編輯
@@ -69,7 +64,6 @@
                 </div>
             </div>
             
-            <!-- 千萬目標進度追蹤器 -->
             <div class="mt-4 bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-inner">
                 <div class="flex justify-between items-end mb-2">
                     <div class="flex items-center">
@@ -87,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- Navigation Tabs -->
             <div class="flex mt-6 bg-white/10 p-1 rounded-xl text-sm font-bold backdrop-blur-md overflow-x-auto no-scrollbar gap-1">
                 <button onclick="switchTab('diagnosis')" id="btn-diagnosis" class="flex-none px-4 py-2.5 rounded-lg transition-all tab-active">配置分析</button>
                 <button onclick="switchTab('plan')" id="btn-plan" class="flex-none px-4 py-2.5 rounded-lg transition-all text-slate-400">定期計畫</button>
@@ -110,11 +103,8 @@
                         <span class="w-1.5 h-6 bg-blue-600 rounded-full mr-3 shadow-lg shadow-blue-200"></span>
                         持有資產細節
                     </h3>
-                    <div class="flex items-center gap-3">
-                        <button onclick="runAIDiagnosis()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded-full text-xs font-black tracking-widest shadow-lg shadow-purple-500/30 flex items-center transition-all active:scale-95">
-                            ✨ AI 健檢
-                        </button>
-                        <span id="holdings-summary" class="text-[11px] text-slate-400 font-bold uppercase tracking-widest hidden sm:inline">Assets</span>
+                    <div class="flex items-center gap-2">
+                        <span id="holdings-summary" class="text-[11px] text-slate-400 font-bold uppercase tracking-widest hidden sm:inline mr-2">Assets</span>
                     </div>
                 </div>
                 <div id="holdings-list" class="space-y-4"></div>
@@ -148,7 +138,6 @@
                     </div>
                 </div>
 
-                <!-- 計畫比例條 -->
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mb-4">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs font-black text-slate-500">單月配置比例</span>
@@ -156,11 +145,9 @@
                     <div id="plan-bar" class="flex h-4 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                 </div>
 
-                <!-- 計畫列表 -->
                 <div id="plan-list" class="space-y-3"></div>
             </div>
 
-            <!-- 下半部：執行進度 -->
             <div class="pt-4 border-t-2 border-slate-100 border-dashed">
                 <div class="flex justify-between items-end px-1 mb-4">
                     <div>
@@ -175,8 +162,6 @@
 
         <!-- Tab 4: Dividend (配息資訊) -->
         <div id="tab-dividend" class="hidden p-4 space-y-5 animate-in fade-in duration-500">
-            
-            <!-- 頂部總結白皮大卡片 -->
             <div class="bg-white p-8 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(244,63,94,0.12)] flex flex-col items-center mt-2 relative overflow-hidden border border-rose-50/50">
                 <div class="flex items-center gap-2 mb-3">
                     <div class="text-[11px] font-black text-slate-400 uppercase tracking-widest">預估年度總配息</div>
@@ -189,8 +174,6 @@
                     <span id="div-monthly-avg">平均每月領 : $0</span>
                 </div>
             </div>
-
-            <!-- 配息標的列表 -->
             <div id="dividend-list" class="space-y-3.5 mt-6"></div>
         </div>
 
@@ -251,7 +234,6 @@
                 </div>
 
                 <div class="space-y-6">
-                    <!-- 現有版圖 -->
                     <div>
                         <div class="flex justify-between text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
                             <span>現有庫存真實比重</span>
@@ -259,7 +241,6 @@
                         <div id="current-region-bar" class="flex h-2.5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                     </div>
                     
-                    <!-- 預估版圖 -->
                     <div>
                         <div class="flex justify-between text-xs font-black text-blue-500 mb-2 uppercase tracking-widest">
                             <span>計畫執行後修正比重</span>
@@ -268,7 +249,6 @@
                     </div>
                 </div>
 
-                <!-- 圖例與數據 -->
                 <div id="region-legend" class="grid grid-cols-3 gap-x-2 gap-y-4 mt-8 pt-6 border-t border-slate-50"></div>
             </div>
             
@@ -279,7 +259,6 @@
                     時間複利成長軌跡
                 </h3>
                 
-                <!-- 複利名言 -->
                 <div class="mb-6 pl-3.5 border-l-[3px] border-blue-400/60 bg-blue-50/30 py-1.5 rounded-r-lg">
                     <p class="text-xs font-bold text-slate-600 italic tracking-wide leading-relaxed">
                         「複利是世界第八大奇蹟。」
@@ -296,28 +275,6 @@
         </div>
     </div>
 
-    <!-- ✨ AI 健檢 Modal -->
-    <div id="ai-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 p-4">
-        <div class="bg-white w-full sm:w-[600px] max-h-[85vh] rounded-[2rem] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-slate-200">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50">
-                <h2 class="text-lg font-black text-indigo-900 flex items-center">
-                    <span class="text-2xl mr-2">✨</span> 投資組合 AI 專業解析
-                </h2>
-                <button onclick="closeAIModal()" class="w-8 h-8 bg-white hover:bg-slate-100 text-indigo-900 rounded-full flex items-center justify-center font-bold transition-colors shadow-sm">✕</button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 custom-scroll bg-white relative" id="ai-content-container">
-                <div id="ai-loading" class="flex flex-col items-center justify-center py-12">
-                    <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                    <p class="text-sm font-bold text-slate-500 animate-pulse tracking-widest">Gemini 正在深度運算您的資產模型...</p>
-                </div>
-                <div id="ai-response" class="hidden space-y-4 text-[15px] text-slate-700 leading-relaxed font-medium"></div>
-            </div>
-            <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 text-right">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Powered by Gemini 2.5 Flash API</p>
-            </div>
-        </div>
-    </div>
-
     <!-- 編輯數據 Modal (預設隱藏) -->
     <div id="edit-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center transition-opacity duration-300">
         <div class="bg-white w-full sm:w-[500px] max-h-[90vh] rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300">
@@ -328,9 +285,7 @@
                 </h2>
                 <button onclick="closeEditModal()" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full flex items-center justify-center font-bold transition-colors">✕</button>
             </div>
-            <div class="p-5 overflow-y-auto flex-1 custom-scroll space-y-5" id="edit-form-container">
-                <!-- Inputs injected by JS -->
-            </div>
+            <div class="p-5 overflow-y-auto flex-1 custom-scroll space-y-5" id="edit-form-container"></div>
             <div class="p-5 border-t border-slate-100 bg-white sm:rounded-b-3xl">
                 <button onclick="saveData()" class="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all text-base tracking-widest">儲存並更新儀表板</button>
             </div>
@@ -338,8 +293,7 @@
     </div>
 
     <script>
-        // --- 資料狀態管理 (支援 LocalStorage) ---
-        // 確保為純粹的 6.0 計畫，保留最新的 7.54M 市值與剛寫入的超強台積電曝光功能，強制以 v24 覆蓋
+        // --- 資料狀態管理 ---
         const defaultData = {
             principal: 7543271, 
             monthly: 60000,     
@@ -359,30 +313,19 @@
             ]
         };
 
-        let appData = JSON.parse(localStorage.getItem('investment_60_data_v24')) || JSON.parse(JSON.stringify(defaultData));
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v25')) || JSON.parse(JSON.stringify(defaultData));
 
         if (!appData.sheetUrl || appData.sheetUrl.trim() === '') {
             appData.sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv';
         }
 
         appData.holdings.forEach(h => {
-            if (h.id === '0050' && h.divPerShare === 3.5) {
-                h.divPerShare = 0;
-                h.yield = 2.5;
-            } else if (h.id === '0050' && h.yield === undefined) {
-                h.yield = 2.5;
-                h.divPerShare = 0;
-            } else if (h.divPerShare === undefined && h.yield === undefined) {
-                if (['00955', '009805', '00662', '00646', '00981A', '00757', '00631L'].includes(h.id)) {
-                    h.divPerShare = 0;
-                    h.yield = 0;
-                } else if (h.id === '2330') {
-                    h.divPerShare = 24; 
-                    h.yield = 0;
-                } else if (h.id === '0052') {
-                    h.divPerShare = 1.199;
-                    h.yield = 0;
-                }
+            if (h.id === '0050' && h.divPerShare === 3.5) { h.divPerShare = 0; h.yield = 2.5; } 
+            else if (h.id === '0050' && h.yield === undefined) { h.yield = 2.5; h.divPerShare = 0; } 
+            else if (h.divPerShare === undefined && h.yield === undefined) {
+                if (['00955', '009805', '00662', '00646', '00981A', '00757', '00631L'].includes(h.id)) { h.divPerShare = 0; h.yield = 0; } 
+                else if (h.id === '2330') { h.divPerShare = 24; h.yield = 0; } 
+                else if (h.id === '0052') { h.divPerShare = 1.199; h.yield = 0; }
             }
             if (h.yield === undefined) h.yield = 0;
             if (h.divPerShare === undefined) h.divPerShare = 0;
@@ -390,7 +333,6 @@
 
         let growthChartInstance = null;
 
-        // 6.0 每月定額戰略計畫
         const sipPlan = [
             { id: '00646', name: '元大 S&P 500', type: '美股大盤', amount: 20000, dates: '8, 18 號', color: '#2563eb' },
             { id: '00662', name: '富邦 NASDAQ', type: '美股科技', amount: 12000, dates: '8, 28 號', color: '#8b5cf6' },
@@ -399,14 +341,12 @@
             { id: '00981A', name: '統一台股增長', type: '台股動能', amount: 4000, dates: '10, 20 號', color: '#10b981' }
         ];
 
-        // 6.0 區域映射規則
         const regionMapping = [
             { key: 'TW', name: '台股版圖', color: '#ef4444', ids: ['2330', '0050', '0052', '00631L', '00981A'] },
             { key: 'US', name: '美股版圖', color: '#3b82f6', ids: ['00757', '00646', '00662', '009805'] },
             { key: 'JP', name: '日股版圖', color: '#f97316', ids: ['00955', '00645'] }
         ];
 
-        // 6.0 扣款行程
         const schedule = [
             { date: '06', label: '新光美國電力 + 中信日本商社', code: '009805 + 00955', amount: 10000 },
             { date: '08', label: '元大 S&P 500 + 富邦 NASDAQ', code: '00646 + 00662', amount: 16000 },
@@ -426,9 +366,7 @@
             const toast = document.getElementById('toast');
             toast.innerText = message;
             toast.classList.remove('opacity-0');
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-            }, 3000);
+            setTimeout(() => { toast.classList.add('opacity-0'); }, 3000);
         }
 
         async function syncPrices() {
@@ -447,11 +385,7 @@
                 const cacheBuster = new Date().getTime();
                 const fetchUrl = appData.sheetUrl + (appData.sheetUrl.includes('?') ? '&' : '?') + '_t=' + cacheBuster;
 
-                const response = await fetch(fetchUrl, { 
-                    cache: 'no-store',
-                    headers: { 'Pragma': 'no-cache' }
-                });
-                
+                const response = await fetch(fetchUrl, { cache: 'no-store', headers: { 'Pragma': 'no-cache' }});
                 if (!response.ok) throw new Error('無法讀取試算表，請檢查網址或發佈狀態。');
                 
                 const csvText = await response.text();
@@ -462,45 +396,33 @@
                     let inQuotes = false;
                     for (let i = 0; i < line.length; i++) {
                         const char = line[i];
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (char === ',' && !inQuotes) {
-                            result.push(current);
-                            current = '';
-                        } else {
-                            current += char;
-                        }
+                        if (char === '"') inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { result.push(current); current = ''; } 
+                        else current += char;
                     }
                     result.push(current);
                     return result;
                 };
 
                 const rows = csvText.split('\n').map(line => parseCSVLine(line.trim()));
-                
                 const priceMap = {};
+                
                 rows.forEach(row => {
                     if (row.length >= 2) {
                         const rawId = row[0].replace(/['"\r\s=]/g, '');
                         const id = rawId.split('.')[0]; 
-                        
                         let price = NaN;
                         for (let j = 1; j < row.length; j++) {
                             const rawPriceStr = row[j].replace(/['",\r\$\s]/g, '');
                             if (rawPriceStr !== '') {
                                 const parsed = parseFloat(rawPriceStr);
-                                if (!isNaN(parsed)) {
-                                    price = parsed;
-                                    break;
-                                }
+                                if (!isNaN(parsed)) { price = parsed; break; }
                             }
                         }
-                        
                         if (id && !isNaN(price)) {
                             priceMap[id] = price;
                             const strippedId = id.replace(/^0+/, '');
-                            if (strippedId) {
-                                priceMap[strippedId] = price;
-                            }
+                            if (strippedId) priceMap[strippedId] = price;
                         }
                     }
                 });
@@ -511,7 +433,6 @@
                 appData.holdings.forEach(h => {
                     const strippedHId = h.id.replace(/^0+/, '');
                     const matchedPrice = priceMap[h.id] !== undefined ? priceMap[h.id] : priceMap[strippedHId];
-
                     if (matchedPrice !== undefined) {
                         h.value = Math.round(h.shares * matchedPrice);
                         updatedCount++;
@@ -521,15 +442,15 @@
 
                 if (updatedCount > 0) {
                     appData.principal = newPrincipal;
-                    localStorage.setItem('investment_60_data_v24', JSON.stringify(appData));
+                    localStorage.setItem('investment_60_data_v25', JSON.stringify(appData));
                     refreshDashboard();
-                    showToast(`✅ 成功同步 ${updatedCount} 檔最新報價！(Google發佈約有3分鐘延遲)`);
+                    showToast(`✅ 成功同步 ${updatedCount} 檔最新報價！`);
                 } else {
-                    showToast(`⚠️ 找不到符合的股號，請檢查試算表的 A 欄格式。`);
+                    showToast(`⚠️ 找不到符合的股號，請檢查試算表。`);
                 }
             } catch (error) {
                 console.error(error);
-                showToast('❌ 同步失敗，請確認網址是否為發佈到網路的 CSV 格式。');
+                showToast('❌ 同步失敗，請確認網址。');
             } finally {
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
@@ -554,7 +475,6 @@
             
             sipPlan.sort((a, b) => b.amount - a.amount).forEach(item => {
                 const percentage = (item.amount / appData.monthly) * 100;
-                
                 const slice = document.createElement('div');
                 slice.style.width = percentage + '%';
                 slice.style.backgroundColor = item.color;
@@ -572,8 +492,7 @@
                         </div>
                         <div class="flex justify-between items-center mt-1">
                             <div class="text-[13px] text-slate-500 font-bold tracking-wider flex items-center">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px] mr-2">${item.type}</span>
-                                每月 ${item.dates}
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px] mr-2">${item.type}</span>每月 ${item.dates}
                             </div>
                             <div class="text-xs font-black" style="color:${item.color}">${percentage.toFixed(1)}%</div>
                         </div>
@@ -589,14 +508,8 @@
                 const div = document.createElement('div');
                 div.className = "task-item flex items-center p-5 bg-white rounded-3xl border border-slate-100 shadow-sm active:scale-95 cursor-pointer";
                 div.onclick = function() {
-                    const isChecked = this.classList.contains('is-done');
-                    if (!isChecked) {
-                        this.classList.add('is-done');
-                        checkedCount++;
-                    } else {
-                        this.classList.remove('is-done');
-                        checkedCount--;
-                    }
+                    this.classList.toggle('is-done');
+                    checkedCount += this.classList.contains('is-done') ? 1 : -1;
                     document.getElementById('progress-percent').innerText = Math.round((checkedCount / schedule.length) * 100) + '%';
                 };
                 div.innerHTML = `
@@ -605,10 +518,7 @@
                         <svg class="check-icon w-6 h-6 text-white absolute" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                     </div>
                     <div class="flex-1">
-                        <div class="title-text font-black text-slate-800 text-base tracking-tight">
-                            ${item.label}
-                            <div class="strike-line"></div>
-                        </div>
+                        <div class="title-text font-black text-slate-800 text-base tracking-tight">${item.label}<div class="strike-line"></div></div>
                         <div class="code-text text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">${item.code}</div>
                     </div>
                     <div class="amount-text font-mono font-black text-slate-600 text-base">${formatCurrency(item.amount)}</div>
@@ -617,11 +527,9 @@
             });
         }
 
-        // --- 全新加入：台積電真實部位解析器 (補回) ---
         function initTSMCExposure() {
             const tsmc = appData.holdings.find(h => h.id === '2330') || {value: 0, shares: 0};
             const tsmcPrice = tsmc.shares > 0 ? (tsmc.value / tsmc.shares) : 0;
-
             const h0050 = appData.holdings.find(h => h.id === '0050') || {value: 0};
             const h0052 = appData.holdings.find(h => h.id === '0052') || {value: 0};
             const h00981A = appData.holdings.find(h => h.id === '00981A') || {value: 0};
@@ -631,11 +539,9 @@
             const val0050 = h0050.value * 0.628;
             const val0052 = h0052.value * 0.6948;
             const val00981A = h00981A.value * 0.0946;
-            // 00631L 為 0050 兩倍槓桿，等效台積電曝險約為 62.8% * 2 = 125.6%
             const val00631L = h00631L.value * 1.256; 
 
             const totalTsmcValue = valDirect + val0050 + val0052 + val00981A + val00631L;
-            // 計算等效總股數 (總含積市值 / 目前台積電股價)
             const totalTsmcShares = tsmcPrice > 0 ? (totalTsmcValue / tsmcPrice) : 0;
             const pctOfPortfolio = appData.principal > 0 ? (totalTsmcValue / appData.principal) * 100 : 0;
 
@@ -659,13 +565,10 @@
                         <div class="text-2xl font-mono font-black text-red-400">${formatCurrency(totalTsmcValue)}</div>
                     </div>
                 </div>
-
                 <div class="mb-2 flex justify-between items-end">
                     <span class="text-xs font-black text-slate-400">總體部位佔比</span>
                     <span class="text-sm font-black text-white">${pctOfPortfolio.toFixed(1)}% <span class="text-[10px] text-slate-500 font-normal">/ 總資產</span></span>
                 </div>
-
-                <!-- 貢獻比例條 -->
                 <div class="flex h-3 w-full rounded-full overflow-hidden shadow-inner bg-slate-800 mb-5">
                     <div style="width: ${pctDirect}%" class="bg-red-500 h-full"></div>
                     <div style="width: ${pct0052}%" class="bg-rose-400 h-full border-l border-slate-900"></div>
@@ -673,8 +576,6 @@
                     <div style="width: ${pct00631L}%" class="bg-red-700 h-full border-l border-slate-900"></div>
                     <div style="width: ${pct00981A}%" class="bg-emerald-500 h-full border-l border-slate-900"></div>
                 </div>
-
-                <!-- 詳細來源分析 -->
                 <div class="grid grid-cols-2 gap-y-3 text-xs font-bold text-slate-400">
                     <div class="flex flex-col pr-4">
                         <div class="flex items-center mb-1"><span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>2330 直接持有</div>
@@ -748,7 +649,9 @@
                     <div class="flex items-center">
                         <div class="w-2 h-10 rounded-full mr-4 shadow-sm" style="background:${h.color}"></div>
                         <div>
-                            <div class="text-base font-black text-slate-800">${h.name}</div>
+                            <div class="text-base font-black text-slate-800 flex items-center">
+                                ${h.name} 
+                            </div>
                             <div class="text-xs text-slate-500 font-black uppercase tracking-tight flex items-center gap-2 mt-1">
                                 <span class="font-mono text-slate-400">${h.id}</span>
                                 <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
@@ -767,8 +670,6 @@
             });
             
             document.getElementById('holdings-summary').innerText = (appData.principal / 1000000).toFixed(2) + 'M Assets';
-            
-            // 啟動真實台積電計算器
             initTSMCExposure();
         }
 
@@ -782,11 +683,7 @@
                 '00662': { icon: '🚀', freq: '每年' },
                 '00955': { icon: '🌸', freq: '每季' },
                 '009805': { icon: '⚡', freq: '每季' },
-                '00981A': { icon: '📈', freq: '每年' },
-                '006208': { icon: '🇹🇼', freq: '半年' },
-                '009811': { icon: '🦅', freq: '每年' },
-                '00645': { icon: '🌸', freq: '每年' },
-                '00965': { icon: '🚀', freq: '每年' }
+                '00981A': { icon: '📈', freq: '每年' }
             };
             if(data[id]) return data[id];
             if (name.includes('債')) return { icon: '🔥', freq: '每月' };
@@ -804,26 +701,16 @@
                 const y = h.yield || 0;
                 const dps = h.divPerShare || 0;
                 let est = 0;
-                
-                if (y > 0) {
-                    est = Math.round(h.value * (y / 100));
-                } else {
-                    est = Math.round(h.shares * dps);
-                }
+                if (y > 0) est = Math.round(h.value * (y / 100));
+                else est = Math.round(h.shares * dps);
                 return { ...h, estDiv: est, activeYield: y, activeDps: dps };
             }).sort((a, b) => b.estDiv - a.estDiv);
 
             divData.forEach(h => {
                 totalDividend += h.estDiv;
-
                 if (h.estDiv > 0) {
                     const styleData = getDividendIconAndFreq(h.id, h.name);
-                    let infoText = "";
-                    if (h.activeYield > 0) {
-                        infoText = `殖利率計 : <span class="text-slate-500 font-mono">${h.activeYield}%</span>`;
-                    } else {
-                        infoText = `每股配 : <span class="text-slate-500 font-mono">$${h.activeDps}</span>`;
-                    }
+                    let infoText = h.activeYield > 0 ? `殖利率計 : <span class="text-slate-500 font-mono">${h.activeYield}%</span>` : `每股配 : <span class="text-slate-500 font-mono">$${h.activeDps}</span>`;
 
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-5 bg-white rounded-[1.5rem] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.03)] border border-rose-50/60";
@@ -852,21 +739,16 @@
 
             document.getElementById('div-annual-total').innerText = formatCurrency(totalDividend);
             document.getElementById('div-monthly-avg').innerText = `平均每月領 : ${formatCurrency(totalDividend / 12)}`;
-            
             const avgYield = appData.principal > 0 ? (totalDividend / appData.principal) * 100 : 0;
             document.getElementById('div-overall-yield').innerText = `均殖利率 ${avgYield.toFixed(2)}%`;
         }
 
         function updateRegionProjection(years, rate) {
             document.getElementById('region-year-label').innerText = `第 ${years} 年後`;
-
             const currentBar = document.getElementById('current-region-bar');
             const futureBar = document.getElementById('future-region-bar');
             const legendContainer = document.getElementById('region-legend');
-            
-            currentBar.innerHTML = '';
-            futureBar.innerHTML = '';
-            legendContainer.innerHTML = '';
+            currentBar.innerHTML = ''; futureBar.innerHTML = ''; legendContainer.innerHTML = '';
 
             const sipTotalBase = sipPlan.reduce((sum, item) => sum + item.amount, 0);
             let futureTotalAssets = 0;
@@ -874,21 +756,14 @@
 
             regionMapping.forEach(rc => {
                 let currentVal = appData.holdings.filter(h => rc.ids.includes(h.id)).reduce((sum, h) => sum + h.value, 0);
-                
                 let sipValBase = sipPlan.filter(p => rc.ids.includes(p.id)).reduce((sum, p) => sum + p.amount, 0);
                 let monthlyVal = (sipValBase / sipTotalBase) * appData.monthly;
-                
                 let n = years * 12;
                 let r = rate / 100 / 12;
                 let futureVal = currentVal * Math.pow(1 + r, n) + (monthlyVal > 0 ? monthlyVal * ((Math.pow(1 + r, n) - 1) / r) : 0);
 
                 futureTotalAssets += futureVal;
-                regionData.push({
-                    name: rc.name,
-                    color: rc.color,
-                    currentVal: currentVal,
-                    futureVal: futureVal
-                });
+                regionData.push({ name: rc.name, color: rc.color, currentVal: currentVal, futureVal: futureVal });
             });
 
             regionData.forEach(data => {
@@ -909,9 +784,7 @@
                 futureBar.appendChild(fSlice);
 
                 const isGrowing = futurePct > currentPct;
-                const trendIcon = isGrowing 
-                    ? `<svg class="w-3.5 h-3.5 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>` 
-                    : `<svg class="w-3.5 h-3.5 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>`;
+                const trendIcon = isGrowing ? `<svg class="w-3.5 h-3.5 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>` : `<svg class="w-3.5 h-3.5 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>`;
 
                 const legDiv = document.createElement('div');
                 legDiv.innerHTML = `
@@ -921,9 +794,7 @@
                     </div>
                     <div class="pl-4 space-y-1">
                         <div class="text-xs text-slate-400 font-mono font-bold">現: ${currentPct.toFixed(1)}%</div>
-                        <div class="text-sm font-black font-mono flex items-center gap-1" style="color:${data.color}">
-                            預: ${futurePct.toFixed(1)}% ${Math.abs(futurePct - currentPct) > 0.5 ? trendIcon : ''}
-                        </div>
+                        <div class="text-sm font-black font-mono flex items-center gap-1" style="color:${data.color}">預: ${futurePct.toFixed(1)}% ${Math.abs(futurePct - currentPct) > 0.5 ? trendIcon : ''}</div>
                     </div>
                 `;
                 legendContainer.appendChild(legDiv);
@@ -941,23 +812,13 @@
             for (let m = 0; m <= totalMonths; m++) {
                 let currentYear = Math.floor(m / 12);
                 let currentMonth = m % 12;
-                
-                if (currentYear === 0 && currentMonth === 0) {
-                    labels.push('現在');
-                } else if (currentMonth === 0) {
-                    labels.push(`第 ${currentYear} 年`);
-                } else {
-                    labels.push(`第 ${currentYear} 年 ${currentMonth} 個月`);
-                }
+                if (currentYear === 0 && currentMonth === 0) labels.push('現在');
+                else if (currentMonth === 0) labels.push(`第 ${currentYear} 年`);
+                else labels.push(`第 ${currentYear} 年 ${currentMonth} 個月`);
                 
                 goalDataPoints.push(appData.goal); 
-                
-                if (m === 0) {
-                    dataPoints.push(principal);
-                } else {
-                    const val = principal * Math.pow(1 + r, m) + monthly * ((Math.pow(1 + r, m) - 1) / r);
-                    dataPoints.push(Math.round(val));
-                }
+                if (m === 0) dataPoints.push(principal);
+                else dataPoints.push(Math.round(principal * Math.pow(1 + r, m) + monthly * ((Math.pow(1 + r, m) - 1) / r)));
             }
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -975,61 +836,15 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            {
-                                label: '預估總資產',
-                                data: dataPoints,
-                                borderColor: '#3b82f6', 
-                                backgroundColor: gradient,
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4, 
-                                pointRadius: 0, 
-                                pointHoverRadius: 6, 
-                                pointBackgroundColor: '#ffffff',
-                                pointBorderColor: '#3b82f6',
-                                pointBorderWidth: 2,
-                                order: 2
-                            },
-                            {
-                                label: '千萬目標線',
-                                data: goalDataPoints,
-                                borderColor: 'rgba(16, 185, 129, 0.6)', 
-                                borderWidth: 2,
-                                borderDash: [6, 4], 
-                                fill: false,
-                                pointRadius: 0,
-                                pointHoverRadius: 0,
-                                order: 1
-                            }
+                            { label: '預估總資產', data: dataPoints, borderColor: '#3b82f6', backgroundColor: gradient, borderWidth: 3, fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 6, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointBorderWidth: 2, order: 2 },
+                            { label: '千萬目標線', data: goalDataPoints, borderColor: 'rgba(16, 185, 129, 0.6)', borderWidth: 2, borderDash: [6, 4], fill: false, pointRadius: 0, pointHoverRadius: 0, order: 1 }
                         ]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                titleFont: { family: 'Noto Sans TC', size: 13 },
-                                bodyFont: { family: 'Noto Sans TC', size: 14, weight: 'bold' },
-                                padding: 12,
-                                displayColors: true,
-                                filter: function(tooltipItem) { return tooltipItem.datasetIndex === 0; },
-                                callbacks: { label: function(context) { return '$' + context.parsed.y.toLocaleString(); } }
-                            }
-                        },
+                        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Noto Sans TC', size: 13 }, bodyFont: { family: 'Noto Sans TC', size: 14, weight: 'bold' }, padding: 12, displayColors: true, filter: function(t) { return t.datasetIndex === 0; }, callbacks: { label: function(c) { return '$' + c.parsed.y.toLocaleString(); } } } },
                         scales: {
-                            x: { 
-                                grid: { display: false }, 
-                                ticks: { 
-                                    font: { family: 'Noto Sans TC', size: 10 }, 
-                                    color: '#94a3b8', 
-                                    maxTicksLimit: 8,
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                } 
-                            },
+                            x: { grid: { display: false }, ticks: { font: { family: 'Noto Sans TC', size: 10 }, color: '#94a3b8', maxTicksLimit: 8, maxRotation: 45, minRotation: 45 } },
                             y: { border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Noto Sans TC', size: 10 }, color: '#94a3b8', callback: function(value) { return (value / 10000) + ' 萬'; } } }
                         }
                     }
@@ -1063,16 +878,12 @@
             } else {
                 for (let m = 1; m <= n; m++) {
                     let check_val = appData.principal * Math.pow(1 + r, m) + appData.monthly * ((Math.pow(1 + r, m) - 1) / r);
-                    if (check_val >= appData.goal) {
-                        hitMonthTotal = m;
-                        break;
-                    }
+                    if (check_val >= appData.goal) { hitMonthTotal = m; break; }
                 }
 
                 if (hitMonthTotal !== -1) {
                     let hitY = Math.floor(hitMonthTotal / 12);
                     let hitM = hitMonthTotal % 12;
-                    
                     let timeStr = "";
                     if (hitY > 0) timeStr += `${hitY} 年`;
                     if (hitY > 0 && hitM > 0) timeStr += `又 `;
@@ -1097,10 +908,7 @@
             document.getElementById('goal-percentage').innerText = percentage.toFixed(2) + '%';
             document.getElementById('current-val-display').innerText = formatCurrency(appData.principal);
             document.getElementById('goal-val-display').innerText = formatCurrency(appData.goal);
-            
-            setTimeout(() => {
-                document.getElementById('goal-progress-bar').style.width = percentage + '%';
-            }, 100);
+            setTimeout(() => { document.getElementById('goal-progress-bar').style.width = percentage + '%'; }, 100);
         }
 
         function openEditModal() {
@@ -1193,9 +1001,7 @@
             }
         }
 
-        function closeEditModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-        }
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
 
         function saveData() {
             appData.sheetUrl = document.getElementById('edit-sheetUrl').value.trim();
@@ -1212,9 +1018,7 @@
             });
             
             appData.principal = newPrincipal;
-
-            localStorage.setItem('investment_60_data_v24', JSON.stringify(appData));
-
+            localStorage.setItem('investment_60_data_v26', JSON.stringify(appData));
             closeEditModal();
             refreshDashboard();
             showToast('✅ 數據與配息設定已儲存！');
@@ -1239,96 +1043,6 @@
             initDiagnosis();
             initDividend(); 
             calculate();
-        }
-
-        // --- ✨ Gemini API AI 投資顧問邏輯 ---
-        const apiKey = ""; // 系統環境將自動帶入 API Key
-
-        async function fetchWithRetry(url, options, maxRetries = 5) {
-            let delays = [1000, 2000, 4000, 8000, 16000];
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return await response.json();
-                } catch (error) {
-                    if (i === maxRetries - 1) throw error;
-                    await new Promise(resolve => setTimeout(resolve, delays[i]));
-                }
-            }
-        }
-
-        async function runAIDiagnosis() {
-            document.getElementById('ai-modal').classList.remove('hidden');
-            document.getElementById('ai-loading').classList.remove('hidden');
-            document.getElementById('ai-response').classList.add('hidden');
-            document.getElementById('ai-response').innerHTML = '';
-
-            // 抓取目前的配置組成
-            const holdingsList = appData.holdings
-                .filter(h => h.value > 0)
-                .map(h => `- ${h.name} (${h.id}): 市值 $${h.value.toLocaleString()} (佔 ${((h.value/appData.principal)*100).toFixed(1)}%)`)
-                .join('\n');
-            
-            const prompt = `您是一位專業、具備全球總經視野的頂級理財顧問。請根據以下使用者的投資組合資料，進行簡短但直擊要害的「資產配置健檢」。
-
-【目前資產狀況】
-總資產: $${appData.principal.toLocaleString()}
-每月定期投入: $${appData.monthly.toLocaleString()}
-長期目標金額: $${appData.goal.toLocaleString()}
-
-【持有標的明細】
-${holdingsList}
-
-請提供以下三點回覆：
-1. 【整體配置評價】：以客觀角度點評其股票版圖 (如: 台股/美股/日股的分佈狀況)，與集中度評估。
-2. 【優化與風險提醒】：提供 2 到 3 個具體的優化建議 (包含是否有過度集中於特定產業如半導體的風險，或是槓桿型ETF的注意事項)。
-3. 【邁向千萬】：根據目前的月供與總資產，給予一句溫暖且充滿能量的達陣鼓勵。
-
-格式要求：
-請使用繁體中文。請使用簡單的 HTML 標籤排版 (例如 <b>, <ul>, <li>, <br>, <p>) 讓閱讀體驗美觀。嚴禁使用 Markdown (如 ** 等符號)。`;
-
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    tools: [{ google_search: {} }], // 啟用 Google 搜尋 Grounding 以獲取最新市場動態
-                    systemInstruction: { parts: [{ text: "You are an AI financial advisor. Always format your output in clean HTML without markdown backticks." }] }
-                };
-
-                const data = await fetchWithRetry(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "<p>抱歉，AI 暫時無法分析，請稍後再試。</p>";
-                
-                // 過濾掉可能多餘的 ```html 標籤
-                text = text.replace(/```html/g, '').replace(/```/g, '');
-
-                document.getElementById('ai-loading').classList.add('hidden');
-                document.getElementById('ai-response').innerHTML = text;
-                document.getElementById('ai-response').classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                document.getElementById('ai-loading').classList.add('hidden');
-                document.getElementById('ai-response').innerHTML = `
-                    <div class="text-rose-500 font-bold p-4 bg-rose-50 rounded-xl border border-rose-200 flex items-center">
-                        <span class="mr-2">❌</span> AI 分析服務連線異常
-                    </div>
-                    <div class="text-xs text-slate-400 mt-2 pl-2 border-l-2 border-slate-200">${error.message}</div>
-                `;
-                document.getElementById('ai-response').classList.remove('hidden');
-            }
-        }
-
-        function closeAIModal() {
-            document.getElementById('ai-modal').classList.add('hidden');
         }
 
         window.onload = () => {
