@@ -56,12 +56,10 @@
             <div class="flex justify-between items-center mt-3">
                 <p id="total-value" class="text-slate-400 text-base font-bold font-mono tracking-wide">載入中...</p>
                 <div class="flex gap-2">
-                    <!-- 同步最新報價按鈕 -->
                     <button onclick="syncPrices()" id="sync-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         抓取報價
                     </button>
-                    <!-- 編輯數據按鈕 -->
                     <button onclick="openEditModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-lg active:scale-95 transition-all">
                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         編輯
@@ -248,7 +246,6 @@
                 </div>
 
                 <div class="space-y-6">
-                    <!-- 現有版圖 -->
                     <div>
                         <div class="flex justify-between text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
                             <span>現有庫存真實比重</span>
@@ -256,7 +253,6 @@
                         <div id="current-region-bar" class="flex h-2.5 w-full rounded-full overflow-hidden shadow-inner bg-slate-100"></div>
                     </div>
                     
-                    <!-- 預估版圖 -->
                     <div>
                         <div class="flex justify-between text-xs font-black text-blue-500 mb-2 uppercase tracking-widest">
                             <span>計畫執行後修正比重</span>
@@ -265,7 +261,6 @@
                     </div>
                 </div>
 
-                <!-- 圖例與數據 -->
                 <div id="region-legend" class="grid grid-cols-3 gap-x-2 gap-y-4 mt-8 pt-6 border-t border-slate-50"></div>
             </div>
             
@@ -276,7 +271,6 @@
                     時間複利成長軌跡
                 </h3>
                 
-                <!-- 複利名言 -->
                 <div class="mb-6 pl-3.5 border-l-[3px] border-blue-400/60 bg-blue-50/30 py-1.5 rounded-r-lg">
                     <p class="text-xs font-bold text-slate-600 italic tracking-wide leading-relaxed">
                         「複利是世界第八大奇蹟。」
@@ -314,27 +308,27 @@
 
     <script>
         // --- 資料狀態管理 ---
-        // 強制鎖定為純粹的 6.0 計畫，更新至最新的 7.9M 總值，強制以 v29 覆蓋避開所有快取
+        // 強制鎖定為純粹的 6.0 計畫，更新至最新的 8.03M 市值，強制以 v30 覆蓋避開所有快取
         const defaultData = {
-            principal: 7902476, 
+            principal: 8037336, 
             monthly: 60000,     
             goal: 10000000,
             sheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv',
             holdings: [
-                { id: '2330', name: '台積電', shares: 1000, value: 2250000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
-                { id: '0050', name: '元大台灣50', shares: 16000, value: 1532000, color: '#f87171', divPerShare: 0, yield: 2.5 },
-                { id: '0052', name: '富邦科技', shares: 24000, value: 1346400, color: '#dc2626', divPerShare: 1.199, yield: 0 },
-                { id: '00631L', name: '台灣50正2', shares: 10000, value: 318900, color: '#b91c1c', divPerShare: 0, yield: 0 },
-                { id: '00757', name: '統一FANG+', shares: 7000, value: 869050, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
-                { id: '00646', name: '元大S&P500', shares: 5944, value: 429751, color: '#2563eb', divPerShare: 0, yield: 0 },
-                { id: '00662', name: '富邦NASDAQ', shares: 2480, value: 283340, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
-                { id: '00955', name: '中信日本商社', shares: 31082, value: 497623, color: '#ea580c', divPerShare: 0, yield: 0 }, 
-                { id: '009805', name: '新光美國電力', shares: 15701, value: 272569, color: '#eab308', divPerShare: 0, yield: 0 }, 
-                { id: '00981A', name: '統一台股增長', shares: 3510, value: 102843, color: '#10b981', divPerShare: 0, yield: 0 }
+                { id: '2330', name: '台積電', shares: 1000, value: 2265000, color: '#ef4444', divPerShare: 24, yield: 0 }, 
+                { id: '0050', name: '元大台灣50', shares: 16000, value: 1526400, color: '#f87171', divPerShare: 0, yield: 2.5 },
+                { id: '0052', name: '富邦科技', shares: 25000, value: 1398750, color: '#dc2626', divPerShare: 1.199, yield: 0 },
+                { id: '00631L', name: '台灣50正2', shares: 10000, value: 312600, color: '#b91c1c', divPerShare: 0, yield: 0 },
+                { id: '00757', name: '統一FANG+', shares: 7000, value: 901600, color: '#3b82f6', divPerShare: 0, yield: 0 }, 
+                { id: '00646', name: '元大S&P500', shares: 6080, value: 449616, color: '#2563eb', divPerShare: 0, yield: 0 },
+                { id: '00662', name: '富邦NASDAQ', shares: 2531, value: 300683, color: '#8b5cf6', divPerShare: 0, yield: 0 }, 
+                { id: '00955', name: '中信日本商社', shares: 31082, value: 512542, color: '#ea580c', divPerShare: 0, yield: 0 }, 
+                { id: '009805', name: '新光美國電力', shares: 15701, value: 268487, color: '#eab308', divPerShare: 0, yield: 0 }, 
+                { id: '00981A', name: '統一台股增長', shares: 3577, value: 101658, color: '#10b981', divPerShare: 0, yield: 0 }
             ]
         };
 
-        let appData = JSON.parse(localStorage.getItem('investment_60_data_v29')) || JSON.parse(JSON.stringify(defaultData));
+        let appData = JSON.parse(localStorage.getItem('investment_60_data_v30')) || JSON.parse(JSON.stringify(defaultData));
 
         if (!appData.sheetUrl || appData.sheetUrl.trim() === '') {
             appData.sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4gMGt4tLLNFJET4sc7DmvGOFcjahTY19o9yFiQN32sCn-r2r8bZFC9tT7DruZ3pScdiIa7GCJt_cH/pub?output=csv';
@@ -466,7 +460,7 @@
 
                 if (updatedCount > 0) {
                     appData.principal = newPrincipal;
-                    localStorage.setItem('investment_60_data_v29', JSON.stringify(appData));
+                    localStorage.setItem('investment_60_data_v30', JSON.stringify(appData));
                     refreshDashboard();
                     showToast(`✅ 成功同步 ${updatedCount} 檔最新報價！`);
                 } else {
@@ -1042,7 +1036,7 @@
             });
             
             appData.principal = newPrincipal;
-            localStorage.setItem('investment_60_data_v29', JSON.stringify(appData));
+            localStorage.setItem('investment_60_data_v30', JSON.stringify(appData));
             closeEditModal();
             refreshDashboard();
             showToast('✅ 數據與配息設定已儲存！');
